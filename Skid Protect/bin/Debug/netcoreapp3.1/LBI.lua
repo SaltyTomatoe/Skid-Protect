@@ -640,16 +640,10 @@ local function create_wrapper(cache, upvalues)
 				return b;
 			end
 		end
-		--%%OaPCODE_FUNCTIONS_HERE%%--
 	end
 
 	local debugging = {
-		get_stack = function()
-			return stack;
-		end;
-		get_IP = function()
-			return IP;
-		end
+		
 	};
 
 	local function func(...)
