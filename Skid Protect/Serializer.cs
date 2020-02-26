@@ -176,7 +176,6 @@ namespace Skid_Protect
 						case "ABx":
 							instruction.Type = 2;
 							instruction.Bx = (data >> 6 + 8) & 0x3FFFF; //Inst Bx
-
 							nBytecode.Append("\\").Append(instruction.Type);
 							nBytecode.Append("\\").Append(instruction.Bx);
 							break;
@@ -221,6 +220,7 @@ namespace Skid_Protect
 
 				//prototypes
 				num = get_int32();
+				nBytecode.Append(toInt32(num));
 				for (int i = 0; i != num; i++)
 				{
 					decode_chunk();
