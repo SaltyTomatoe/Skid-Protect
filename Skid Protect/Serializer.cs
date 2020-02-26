@@ -34,6 +34,7 @@ namespace Skid_Protect
 		static bool big_endian = false;
 		static int int_size = 4;
 		static int size_t = 4;
+		static public StringBuilder opcode_funcs = new StringBuilder();
 
 		int bitExtracted(int number, int k, int p)
 		{
@@ -105,15 +106,15 @@ namespace Skid_Protect
 				}
 				return new StringBuilder().Append("\\").Append(a).Append("\\").Append(b).Append("\\").Append(c).Append("\\").Append(d);
 			}
-			Double get_float64()
-			{
-				byte[] s = new byte[8];
-				for (int i = 0; i != 8; i++)
-				{
-					s[i] = (byte)get_int8();
-				}
-				return BitConverter.ToDouble(s);
-			}
+			//Double get_float64()
+			//{
+			//	byte[] s = new byte[8];
+			//	for (int i = 0; i != 8; i++)
+			//	{
+			//		s[i] = (byte)get_int8();
+			//	}
+			//	return BitConverter.ToDouble(s);
+			//}
 			StringBuilder get_string(bool has_len = false, int len = 0)
 			{
 				if (has_len == false)
@@ -131,7 +132,7 @@ namespace Skid_Protect
 				return str;
 			}
 
-			void decode_chunk()
+			void decode_chunk(bool is_proto = false)
 			{
 				//instructions!
 				int num = 0;
@@ -158,7 +159,14 @@ namespace Skid_Protect
 					int opcode = (data & 0x3F);
 					string opcode_type = lua_opcode_types[opcode];
 
-					nBytecode.Append("\\").Append(opcode);
+					if (is_proto == false)
+					{
+						opcode_funcs.Append("\ninstruction = instructions[IP];IP = IP + 1\n").Append(Opcodes.ops[opcode]);
+					}
+					else
+					{
+						nBytecode.Append("\\").Append(opcode);
+					}
 
 					instruction.A = (data >> 6) & 0xFF;
 					nBytecode.Append("\\").Append(instruction.A);
@@ -181,10 +189,11 @@ namespace Skid_Protect
 							break;
 						case "AsBx":
 							instruction.Type = 3;
+
 							instruction.sBx = ((data >> 6 + 8) & 0x3FFFF); //sBx
 
 							nBytecode.Append("\\").Append(instruction.Type);
-							nBytecode.Append("\\").Append(instruction.sBx);
+							nBytecode.Append("\\").Append(toInt32(instruction.sBx));
 							break;
 					}
 				}
@@ -204,7 +213,11 @@ namespace Skid_Protect
 							nBytecode.Append("\\").Append(get_int8());
 							break;
 						case 3:
-							Double data_float = get_float64();
+							//get float
+							for (int x = 0; x != 8; x++)
+							{
+								nBytecode.Append("\\").Append(get_int8());
+							}
 							break;
 						case 4:
 							StringBuilder unfiltered = get_string();
@@ -223,7 +236,7 @@ namespace Skid_Protect
 				nBytecode.Append(toInt32(num));
 				for (int i = 0; i != num; i++)
 				{
-					decode_chunk();
+					decode_chunk(true);
 				}
 
 				//DEBUG INFOOOOOO MY FAVORITE!
@@ -267,13 +280,13 @@ namespace Skid_Protect
 		{
 
 			lbi = lbi.Replace("%%Bytecode%%", bytecode);
-			//lbi = lbi.Replace("--%%OPCODE_FUNCTIONS_HERE%%--", opcodes);
+			lbi = lbi.Replace("--%%OPCODE_FUNCTIONS_HERE%%--", opcodes);
 			return lbi;
 		}
 		static public string Serialize(byte[] a1, string a2)
 		{
 			StringBuilder bytecode = Serialize(a1);
-			string lbi = format_lbi(a2, bytecode.ToString(), "");
+			string lbi = format_lbi(a2, bytecode.ToString(), opcode_funcs.ToString());
 			return lbi;
 		}
 	}

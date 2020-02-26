@@ -93,7 +93,7 @@ local function decode_bytecode(bytecode)
         end
 	end
 
-	local function decode_chunk()
+	local function decode_chunk(is_proto)
 		local chunk;
 		local instructions = {};
 		local constants    = {};
@@ -123,11 +123,11 @@ local function decode_bytecode(bytecode)
 					-- type   = [ABC, ABx, AsBx]
 					-- A, B, C, Bx, or sBx depending on type
 				};
-				local opcode = get_int8();
+				if(is_proto == true)then
+					instruction.opcode = (get_int8())
+				end
 				instruction.A = get_int8();
 				local type   = get_int8()
-
-				instruction.opcode = opcode;
 				instruction.type   = type;
 
 				if type == 1 then
@@ -136,7 +136,7 @@ local function decode_bytecode(bytecode)
 				elseif type == 2 then
 					instruction.Bx = get_int8()
 				elseif type == 3 then
-					instruction.sBx = get_int8() - 131071;
+					instruction.sBx = get_int32();
 				end
 
 				instructions[i] = instruction;
@@ -170,35 +170,11 @@ local function decode_bytecode(bytecode)
 		do
 			num = get_int32();
 			for i = 1, num do
-				prototypes[i-1] = decode_chunk();
+				prototypes[i-1] = decode_chunk(true);
 			end
 		end
 
-		-- Decode debug info
-        -- Not all of which is used yet.
-		--[[do
-			-- line numbers
-			local data = debug.lines
-			num = get_int32();
-			for i = 1, num do
-				data[i] = get_int32();
-			end
-
-			-- locals
-			num = get_int32();
-			for i = 1, num do
-				get_string():sub(1, -2);	-- local name
-				get_int32();	-- local start PC
-				get_int32();	-- local end   PC
-			end
-
-			-- upvalues
-			num = get_int32();
-			for i = 1, num do
-				get_string();	-- upvalue name
-			end
-		end]]
-
+		
 		return chunk;
 	end
 
@@ -695,10 +671,237 @@ local function create_wrapper(cache, upvalues)
 	return debugging, func;
 end
 
+local function wrap(cache, upvalues)
+	local instructions = cache.instructions;
+	local constants    = cache.constants;
+	local prototypes   = cache.prototypes;
+
+	
+	local stack, top
+	local environment
+	local IP = 1;	-- instruction pointer
+	local vararg, vararg_size
+
+	local function loop()
+		local instructions = instructions
+		local instruction, a, b
+
+		--[[while true do
+			instruction = instructions[IP];
+			IP = IP + 1
+			a, b = opcode_funcs[instruction.opcode](instruction);
+			if a then
+				return b;
+			end
+		end]]
+		
+instruction = instructions[IP];IP = IP + 1
+local key = constants[instruction.Bx].data;
+        stack[instruction.A] = environment[key];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+local A = instruction.A;
+        local B = instruction.B;
+        local C = instruction.C;
+        local stack = stack;
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+local proto = prototypes[instruction.Bx]
+        local instructions = instructions
+        local stack = stack
+
+        local indices = {}
+        local new_upvals = setmetatable({},
+            {
+                __index = function(t, k)
+                    local upval = indices[k]
+                    return upval.segment[upval.offset]
+                end,
+                __newindex = function(t, k, v)
+                    local upval = indices[k]
+                    upval.segment[upval.offset] = v
+                end
+            }
+        )
+        for i = 1, proto.upvalues do
+            local movement = instructions[IP]
+            if movement.opcode == 0 then -- MOVE
+                indices[i-1] = {segment = stack, offset = movement.B}
+            elseif instructions[IP].opcode == 4 then -- GETUPVAL
+                indices[i-1] = {segment = upvalues, offset = movement.B}
+            end
+            IP = IP + 1
+        end
+
+        local _, func = create_wrapper(proto, new_upvals)
+        stack[instruction.A] = func
+instruction = instructions[IP];IP = IP + 1
+local key = constants[instruction.Bx].data;
+        environment[key] = stack[instruction.A];
+instruction = instructions[IP];IP = IP + 1
+local key = constants[instruction.Bx].data;
+        stack[instruction.A] = environment[key];
+instruction = instructions[IP];IP = IP + 1
+local A = instruction.A;
+        local B = instruction.B;
+        local C = instruction.C;
+        local stack = stack;
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+--TODO: CLOSE
+        local A = instruction.A;
+        local B = instruction.B;
+        local stack = stack;
+        local limit;
+        local loop, output;
+
+        if B == 1 then
+            return true;
+        end
+        if B == 0 then
+            limit = top
+        else
+            limit = A + B - 2;
+        end
+
+        output = {};
+        local loop = 0
+        for i = A, limit do
+            loop = loop + 1
+            output[loop] = stack[i];
+        end
+        return true, output;
+	end
+
+	local debugging = {
+		
+	};
+
+	local function func(...)
+		local local_stack = {};
+		local ghost_stack = {};
+
+		top = -1
+		stack = setmetatable(local_stack, {
+			__index = ghost_stack;
+			__newindex = function(t, k, v)
+				if k > top and v then
+					top = k
+				end
+				ghost_stack[k] = v
+			end;
+		})
+		local args = {...};
+		vararg = {}
+		vararg_size = select("#", ...) - 1
+		for i = 0, vararg_size do
+			local_stack[i] = args[i+1];
+			vararg[i] = args[i+1]
+		end
+
+		environment = getfenv();
+		IP = 1;
+		local thread = coroutine.create(loop)
+		local status,a, b = coroutine.resume(thread)
+		if status and a then
+			if b then
+				return unpack(b);
+			end
+			return;
+		else
+			--TODO error converting
+			local name = cache.name;
+			local line = cache.debug.lines[IP];
+			local err  = b:gsub("(.-:)", "");
+			local output = "";
+			output = output .. (name and name .. ":" or "");
+			output = output .. (line and line .. ":" or "");
+			output = output .. b;
+			error(output, 0);
+
+		end
+	end
+
+	return debugging, func;
+end
+
 load_bytecode = function(bytecode)
 	local cache = decode_bytecode(bytecode);
-	local _, func = create_wrapper(cache);
+	local _, func = wrap(cache);
 	return func;
 end;
 
-load_bytecode("\0\4\0\0\0\5\0\2\0\1\1\2\1\28\0\1\2\1\30\0\1\1\0\2\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\3\0\0\0\120\100\0\0\0\0\0")()
+load_bytecode("\0\8\0\0\0\0\2\0\1\2\1\0\1\2\1\0\2\0\0\2\2\0\2\2\0\1\1\1\0\1\1\0\3\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\3\0\0\0\120\100\0\4\2\0\0\0\100\0\1\0\0\0\0\4\0\0\0\5\0\2\0\1\1\2\1\28\0\1\2\1\30\0\1\1\0\2\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\4\0\0\0\108\111\108\0\0\0\0\0")()

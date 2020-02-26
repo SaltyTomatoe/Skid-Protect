@@ -93,7 +93,7 @@ local function decode_bytecode(bytecode)
         end
 	end
 
-	local function decode_chunk()
+	local function decode_chunk(is_proto)
 		local chunk;
 		local instructions = {};
 		local constants    = {};
@@ -123,11 +123,11 @@ local function decode_bytecode(bytecode)
 					-- type   = [ABC, ABx, AsBx]
 					-- A, B, C, Bx, or sBx depending on type
 				};
-				local opcode = get_int8();
+				if(is_proto == true)then
+					instruction.opcode = (get_int8())
+				end
 				instruction.A = get_int8();
 				local type   = get_int8()
-
-				instruction.opcode = opcode;
 				instruction.type   = type;
 
 				if type == 1 then
@@ -136,7 +136,7 @@ local function decode_bytecode(bytecode)
 				elseif type == 2 then
 					instruction.Bx = get_int8()
 				elseif type == 3 then
-					instruction.sBx = get_int8() - 131071;
+					instruction.sBx = get_int32();
 				end
 
 				instructions[i] = instruction;
@@ -170,35 +170,11 @@ local function decode_bytecode(bytecode)
 		do
 			num = get_int32();
 			for i = 1, num do
-				prototypes[i-1] = decode_chunk();
+				prototypes[i-1] = decode_chunk(true);
 			end
 		end
 
-		-- Decode debug info
-        -- Not all of which is used yet.
-		--[[do
-			-- line numbers
-			local data = debug.lines
-			num = get_int32();
-			for i = 1, num do
-				data[i] = get_int32();
-			end
-
-			-- locals
-			num = get_int32();
-			for i = 1, num do
-				get_string():sub(1, -2);	-- local name
-				get_int32();	-- local start PC
-				get_int32();	-- local end   PC
-			end
-
-			-- upvalues
-			num = get_int32();
-			for i = 1, num do
-				get_string();	-- upvalue name
-			end
-		end]]
-
+		
 		return chunk;
 	end
 
@@ -695,9 +671,78 @@ local function create_wrapper(cache, upvalues)
 	return debugging, func;
 end
 
+local function wrap(cache, upvalues)
+	local instructions = cache.instructions;
+	local constants    = cache.constants;
+	local prototypes   = cache.prototypes;
+
+	
+	local stack, top
+	local environment
+	local IP = 1;	-- instruction pointer
+	local vararg, vararg_size
+
+	local function loop()
+		local instructions = instructions
+		local instruction, a, b
+		--%%OPCODE_FUNCTIONS_HERE%%--
+	end
+
+	local debugging = {
+		
+	};
+
+	local function func(...)
+		local local_stack = {};
+		local ghost_stack = {};
+
+		top = -1
+		stack = setmetatable(local_stack, {
+			__index = ghost_stack;
+			__newindex = function(t, k, v)
+				if k > top and v then
+					top = k
+				end
+				ghost_stack[k] = v
+			end;
+		})
+		local args = {...};
+		vararg = {}
+		vararg_size = select("#", ...) - 1
+		for i = 0, vararg_size do
+			local_stack[i] = args[i+1];
+			vararg[i] = args[i+1]
+		end
+
+		environment = getfenv();
+		IP = 1;
+		local thread = coroutine.create(loop)
+		local status,a, b = coroutine.resume(thread)
+		if status and a then
+			if b then
+				return unpack(b);
+			end
+			return;
+		else
+			--TODO error converting
+			local name = cache.name;
+			local line = cache.debug.lines[IP];
+			local err  = b:gsub("(.-:)", "");
+			local output = "";
+			output = output .. (name and name .. ":" or "");
+			output = output .. (line and line .. ":" or "");
+			output = output .. b;
+			error(output, 0);
+
+		end
+	end
+
+	return debugging, func;
+end
+
 load_bytecode = function(bytecode)
 	local cache = decode_bytecode(bytecode);
-	local _, func = create_wrapper(cache);
+	local _, func = wrap(cache);
 	return func;
 end;
 
