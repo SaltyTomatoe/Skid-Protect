@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skid Protect", "Skid Protect\Skid Protect.csproj", "{D94B078B-2149-4F65-BA8A-CAC5EC1F2147}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D94B078B-2149-4F65-BA8A-CAC5EC1F2147}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D94B078B-2149-4F65-BA8A-CAC5EC1F2147}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D94B078B-2149-4F65-BA8A-CAC5EC1F2147}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D94B078B-2149-4F65-BA8A-CAC5EC1F2147}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7F8EF704-6FE1-4149-86C0-A1BB22722F56}
+	EndGlobalSection
+EndGlobal
