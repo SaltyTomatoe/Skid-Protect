@@ -48,13 +48,13 @@ namespace Skid_Protect
 
 			byte[] bytecode = Get_Bytecode("Code.lua");
 
-			Console.WriteLine("Serializing Bytecode");
+			Console.WriteLine("\nSerializing Bytecode & Fixing LUA VM");
 
 			string lbi = File.ReadAllText(Path.Combine(directory, "LBI.lua"));
 			string Compiled_VM = Serializer.Serialize(bytecode,lbi);
 
-			Console.WriteLine("\nLua VM has finished generating");
-			//Console.WriteLine(new_bytes);
+			Console.WriteLine("\nFinished generating LUA VM");
+
 			File.WriteAllText(Path.Combine(directory,"Output.lua"), Compiled_VM);
 
 			// the code that you want to measure comes here
