@@ -30,7 +30,6 @@ namespace Skid_Protect
 
 			proc.OutputDataReceived += (sender, args) => { err += args.Data; };
 			proc.ErrorDataReceived += (sender, args) => { err += args.Data; };
-
 			proc.Start();
 			proc.BeginOutputReadLine();
 			proc.BeginErrorReadLine();
@@ -46,7 +45,6 @@ namespace Skid_Protect
 			var watch = System.Diagnostics.Stopwatch.StartNew();
 
 			byte[] bytecode = Get_Bytecode("Code.lua");
-
 			Console.WriteLine("\nSerializing Bytecode & Fixing LUA VM");
 
 			string lbi = File.ReadAllText(Path.Combine(directory, "LBI.lua"));
@@ -75,12 +73,12 @@ namespace Skid_Protect
 
 			proc.OutputDataReceived += (sender, args) => { err += args.Data;};
 			proc.ErrorDataReceived += (sender, args) => { err += args.Data;};
-
+			Console.WriteLine(err);
 			proc.Start();
 			proc.BeginOutputReadLine();
 			proc.BeginErrorReadLine();
 			proc.WaitForExit();
-			File.Delete(output_file);
+			//File.Delete(output_file);
 			// the code that you want to measure comes here
 			watch.Stop();
 			var elapsedMs = watch.ElapsedMilliseconds;

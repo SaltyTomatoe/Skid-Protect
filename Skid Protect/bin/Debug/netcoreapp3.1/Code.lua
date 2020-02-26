@@ -1,5 +1,3 @@
-print'xd'
-
-function d()print'lol' end
-
-d()
+local d = 1
+print(d)
+print(true)

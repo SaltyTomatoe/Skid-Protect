@@ -132,6 +132,7 @@ namespace Skid_Protect
 					str.Append("\\").Append(bytecode[index + i]);
 				}
 				index = index + len;
+				Console.WriteLine(str);
 				return str;
 			}
 

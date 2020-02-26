@@ -13,7 +13,7 @@
 -- * TODO: the plugin module is highly experimental and unstable.
 ----
 
-package.path = package.path .. [[";C:\Users\2022c\Desktop\Coding\SkidProtect\Skid Protect\Skid Protect\bin\Debug\netcoreapp3.1\Lua\Minifier\?.lua"]]
+package.path = package.path .. ";C:\\Users\\2022c\\Desktop\\Coding\\LuaInterpreterv3\\require\\Minifier\\?.lua"
 local fs = require "fs"
 local llex = require "llex"
 local lparser = require "lparser"
