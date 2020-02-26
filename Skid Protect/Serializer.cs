@@ -22,6 +22,7 @@ namespace Skid_Protect
 		class Opcode_Information
 		{
 			public int NewName { get; set; }
+			public int OldName { get; set; }
 			public int Type { get; set; }
 			public int A { get; set; }
 			public int B { get; set; }
@@ -34,7 +35,9 @@ namespace Skid_Protect
 		static bool big_endian = false;
 		static int int_size = 4;
 		static int size_t = 4;
+
 		static public StringBuilder opcode_funcs = new StringBuilder();
+		static private Dictionary<int, Opcode_Information> Opcodes_Used_in_Closure = new Dictionary<int, Opcode_Information>();
 
 		int bitExtracted(int number, int k, int p)
 		{
@@ -166,6 +169,12 @@ namespace Skid_Protect
 					else
 					{
 						nBytecode.Append("\\").Append(opcode);
+						instruction.OldName = opcode;
+						instruction.NewName = opcode;
+						if (Opcodes_Used_in_Closure.ContainsKey(opcode) == false)
+						{
+							Opcodes_Used_in_Closure.Add(opcode, instruction);
+						}
 					}
 
 					instruction.A = (data >> 6) & 0xFF;
@@ -276,17 +285,25 @@ namespace Skid_Protect
 			decode_chunk();
 			return nBytecode;
 		}
-		static private string format_lbi(string lbi, string bytecode, string opcodes)
+		static private string format_lbi(string lbi, string bytecode, string opcodes, string opcodes_Closure)
 		{
 
 			lbi = lbi.Replace("%%Bytecode%%", bytecode);
 			lbi = lbi.Replace("--%%OPCODE_FUNCTIONS_HERE%%--", opcodes);
+			lbi = lbi.Replace("--%%CLOSURE_FUNCTIONS_HERE%%--", opcodes_Closure);
 			return lbi;
 		}
 		static public string Serialize(byte[] a1, string a2)
 		{
 			StringBuilder bytecode = Serialize(a1);
-			string lbi = format_lbi(a2, bytecode.ToString(), opcode_funcs.ToString());
+			StringBuilder opcodes_Closure = new StringBuilder();
+			//format the used ops in closure
+			foreach (var item in Opcodes_Used_in_Closure)
+			{
+				opcodes_Closure.Append("\n[" + item.Key + "] = ").Append(Opcodes.ops_table[item.Key]);
+			}
+			//end
+			string lbi = format_lbi(a2, bytecode.ToString(), opcode_funcs.ToString(),opcodes_Closure.ToString());
 			return lbi;
 		}
 	}

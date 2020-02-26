@@ -1,907 +1,202 @@
-local lua_opcode_types = {
-	"ABC",  "ABx", "ABC",  "ABC",
-	"ABC",  "ABx", "ABC",  "ABx",
-	"ABC",  "ABC", "ABC",  "ABC",
-	"ABC",  "ABC", "ABC",  "ABC",
-	"ABC",  "ABC", "ABC",  "ABC",
-	"ABC",  "ABC", "AsBx", "ABC",
-	"ABC",  "ABC", "ABC",  "ABC",
-	"ABC",  "ABC", "ABC",  "AsBx",
-	"AsBx", "ABC", "ABC", "ABC",
-	"ABx",  "ABC",
-}
-
-local lua_opcode_names = {
-	"MOVE",     "LOADK",     "LOADBOOL", "LOADNIL",
-	"GETUPVAL", "GETGLOBAL", "GETTABLE", "SETGLOBAL",
-	"SETUPVAL", "SETTABLE",  "NEWTABLE", "SELF",
-	"ADD",      "SUB",       "MUL",      "DIV",
-	"MOD",      "POW",       "UNM",      "NOT",
-	"LEN",      "CONCAT",    "JMP",      "EQ",
-	"LT",       "LE",        "TEST",     "TESTSET",
-	"CALL",     "TAILCALL",  "RETURN",   "FORLOOP",
-	"FORPREP",  "TFORLOOP",  "SETLIST",  "CLOSE",
-	"CLOSURE",  "VARARG"
-};
-
---[[
-local lua_opcode_numbers = {};
-for number, name in next, lua_opcode_names do
-	lua_opcode_numbers[name] = number;
+local function o(n,a,c)if c then
+local l=0
+local e=0
+for c=a,c do
+l=l+2^e*o(n,c)e=e+1
 end
---]]
-
---- Extract bits from an integer
---@author: Stravant
-local function get_bits(input, n, n2)
-	if n2 then
-		local total = 0
-		local digitn = 0
-		for i = n, n2 do
-			total = total + 2^digitn*get_bits(input, i)
-			digitn = digitn + 1
-		end
-		return total
-	else
-		local pn = 2^(n-1)
-		return (input % (pn + pn) >= pn) and 1 or 0
-	end
+return l
+else
+local l=2^(a-1)return(n%(l+l)>=l)and 1 or 0
 end
-
-local function decode_bytecode(bytecode)
-	local index = 1
-	local big_endian = false
-    local int_size;
-    local size_t;
-
-	-- Binary decoding helper functions
-	local get_int8, get_int32, get_int64, get_float64, get_string;
-	do
-		function get_int8()
-			local a = bytecode:byte(index, index);
-			index = index + 1
-			return a
-		end
-		function get_int32()
-            local a, b, c, d = bytecode:byte(index, index + 3);
-            index = index + 4;
-            return d*16777216 + c*65536 + b*256 + a
-        end
-        function get_int64()
-            local a = get_int32();
-            local b = get_int32();
-            return b*4294967296 + a;
-        end
-		function get_float64()
-			local a = get_int32()
-			local b = get_int32()
-			return (-2*get_bits(b, 32)+1)*(2^(get_bits(b, 21, 31)-1023))*
-			       ((get_bits(b, 1, 20)*(2^32) + a)/(2^52)+1)
-		end
-		function get_string(len)
-			local str;
-            if len then
-	            str = bytecode:sub(index, index + len - 1);
-	            index = index + len;
-            else
-                len = get_int32();
-	            if len == 0 then return; end
-	            str = bytecode:sub(index, index + len - 1);
-	            index = index + len;
-            end
-            return str;
-        end
-	end
-
-	local function decode_chunk(is_proto)
-		local chunk;
-		local instructions = {};
-		local constants    = {};
-		local prototypes   = {};
-		local debug = {
-			lines = {};
-		};
-
-		chunk = {
-			instructions = instructions;
-			constants    = constants;
-			prototypes   = prototypes;
-			debug = debug;
-		};
-
-		local num;
-
-		chunk.upvalues  = get_int8();
-
-        -- TODO: realign lists to 1
-		-- Decode instructions
-		do
-			num = get_int32();
-			for i = 1, num do
-				local instruction = {
-					-- opcode = opcode number;
-					-- type   = [ABC, ABx, AsBx]
-					-- A, B, C, Bx, or sBx depending on type
-				};
-				if(is_proto == true)then
-					instruction.opcode = (get_int8())
-				end
-				instruction.A = get_int8();
-				local type   = get_int8()
-				instruction.type   = type;
-
-				if type == 1 then
-					instruction.B = get_int8()
-					instruction.C = get_int8()
-				elseif type == 2 then
-					instruction.Bx = get_int8()
-				elseif type == 3 then
-					instruction.sBx = get_int32();
-				end
-
-				instructions[i] = instruction;
-			end
-		end
-
-		-- Decode constants
-		do
-			num = get_int32();
-			for i = 1, num do
-				local constant = {
-					-- type = constant type;
-					-- data = constant data;
-				};
-				local type = get_int8();
-				constant.type = type;
-
-				if type == 1 then
-					constant.data = (get_int8() ~= 0);
-				elseif type == 3 then
-					constant.data = get_float64();
-				elseif type == 4 then
-					constant.data = get_string():sub(1, -2);
-				end
-
-				constants[i-1] = constant;
-			end
-		end
-
-		-- Decode Prototypes
-		do
-			num = get_int32();
-			for i = 1, num do
-				prototypes[i-1] = decode_chunk(true);
-			end
-		end
-
-		
-		return chunk;
-	end
-
-	return decode_chunk();
 end
-
-local function handle_return(...)
-	local c = select("#", ...)
-	local t = {...}
-	return c, t
+local function x(c)local l=1
+local e=false
+local e;local e;local n,e,t,a,u;do
+function n()local e=c:byte(l,l);l=l+1
+return e
 end
-
-local function create_wrapper(cache, upvalues)
-	local instructions = cache.instructions;
-	local constants    = cache.constants;
-	local prototypes   = cache.prototypes;
-
-	
-	local stack, top
-	local environment
-	local IP = 1;	-- instruction pointer
-	local vararg, vararg_size
-
-	local opcode_funcs = {
-		[0]  = function(instruction)	-- MOVE
-			stack[instruction.A] = stack[instruction.B];
-		end,
-		[1]  = function(instruction)	-- LOADK
-			stack[instruction.A] = constants[instruction.Bx].data;
-		end,
-		[2]  = function(instruction)	-- LOADBOOL
-			stack[instruction.A] = instruction.B ~= 0
-			if instruction.C ~= 0 then
-				IP = IP + 1
-			end
-		end,
-		[3]  = function(instruction)	-- LOADNIL
-			local stack = stack
-			for i = instruction.A, instruction.B do
-				stack[i] = nil
-			end
-		end,
-		[4] = function(instruction)		-- GETUPVAL
-			stack[instruction.A] = upvalues[instruction.B]
-		end,
-		[5]  = function(instruction)	-- GETGLOBAL
-			local key = constants[instruction.Bx].data;
-			stack[instruction.A] = environment[key];
-		end,
-		[6]  = function(instruction)	-- GETTABLE
-			local C = instruction.C
-			local stack = stack
-			C = C > 255 and constants[C-256].data or stack[C]
-			stack[instruction.A] = stack[instruction.B][C];
-		end,
-		[7]  = function(instruction)	-- SETGLOBAL
-			local key = constants[instruction.Bx].data;
-			environment[key] = stack[instruction.A];
-		end,
-		[8] = function (instruction)	-- SETUPVAL
-			upvalues[instruction.B] = stack[instruction.A]
-		end,
-		[9] = function (instruction)	-- SETTABLE
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack, constants = stack, constants;
-
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
-
-			stack[instruction.A][B] = C
-		end,
-		[10] = function (instruction)	-- NEWTABLE
-			stack[instruction.A] = {}
-		end,
-		[11] = function (instruction)	-- SELF
-			local A = instruction.A
-			local B = instruction.B
-			local C = instruction.C
-			local stack = stack
-
-			B = stack[B]
-			C = C > 255 and constants[C-256].data or stack[C]
-
-			stack[A+1] = B
-			stack[A]   = B[C]
-		end,
-		[12] = function(instruction)	-- ADD
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack, constants = stack, constants;
-
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
-
-			stack[instruction.A] = B+C;
-		end,
-		[13] = function(instruction)	-- SUB
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack, constants = stack, constants;
-
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
-
-			stack[instruction.A] = B - C;
-		end,
-		[14] = function(instruction)	-- MUL
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack, constants = stack, constants;
-
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
-
-			stack[instruction.A] = B * C;
-		end,
-		[15] = function(instruction)	--DIV
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack, constants = stack, constants;
-
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
-
-			stack[instruction.A] = B / C;
-		end,
-		[16] = function(instruction) 	-- MOD
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack, constants = stack, constants;
-
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
-
-			stack[instruction.A] = B % C;
-		end,
-		[17] = function(instruction)	-- POW
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack, constants = stack, constants;
-
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
-
-			stack[instruction.A] = B ^ C;
-		end,
-		[18] = function(instruction)	-- UNM
-			stack[instruction.A] = -stack[instruction.B]
-		end,
-		[19] = function(instruction)	-- NOT
-			stack[instruction.A] = not stack[instruction.B]
-		end,
-		[20] = function(instruction)	-- LEN
-			stack[instruction.A] = #stack[instruction.B]
-		end,
-		[21] = function(instruction)	-- CONCAT
-			local B = instruction.B
-			local result = stack[B]
-			for i = B+1, instruction.C do
-				result = result .. stack[i]
-			end
-			stack[instruction.A] = result
-		end,
-		[22] = function(instruction)	-- JUMP
-			IP = IP + instruction.sBx
-		end,
-		[23] = function(instruction)	-- EQ
-			local A = instruction.A
-			local B = instruction.B
-			local C = instruction.C
-			local stack, constants = stack, constants
-
-			A = A ~= 0
-			if (B > 255) then B = constants[B-256].data else B = stack[B] end
-			if (C > 255) then C = constants[C-256].data else C = stack[C] end
-			if (B == C) ~= A then
-				IP = IP + 1
-			end
-		end,
-		[24] = function(instruction)	-- LT
-			local A = instruction.A
-			local B = instruction.B
-			local C = instruction.C
-			local stack, constants = stack, constants
-
-			A = A ~= 0
-			B = B > 255 and constants[B-256].data or stack[B]
-			C = C > 255 and constants[C-256].data or stack[C]
-			if (B < C) ~= A then
-				IP = IP + 1
-			end
-		end,
-		[25] = function(instruction)	-- LT
-			local A = instruction.A
-			local B = instruction.B
-			local C = instruction.C
-			local stack, constants = stack, constants
-
-			A = A ~= 0
-			B = B > 255 and constants[B-256].data or stack[B]
-			C = C > 255 and constants[C-256].data or stack[C]
-			if (B <= C) ~= A then
-				IP = IP + 1
-			end
-		end,
-		[26] = function(instruction)	-- TEST
-			local A = stack[instruction.A];
-			if (not not A) == (instruction.C == 0) then
-				IP = IP + 1
-			end
-		end,
-		[27] = function(instruction)	-- TESTSET
-			local stack = stack
-			local B = stack[instruction.B]
-
-			if (not not B) == (instruction.C == 0) then
-				IP = IP + 1
-			else
-				stack[instruction.A] = B
-			end
-		end,
-		[28] = function(instruction)	-- CALL
-			local A = instruction.A;
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack = stack;
-			local args, results;
-			local limit, loop
-
-			args = {};
-			if B ~= 1 then
-				if B ~= 0 then
-					limit = A+B-1;
-				else
-					limit = top
-				end
-
-				loop = 0
-				for i = A+1, limit do
-					loop = loop + 1
-					args[loop] = stack[i];
-				end
-
-				limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
-			else
-				limit, results = handle_return(stack[A]())
-			end
-
-			top = A - 1
-
-			if C ~= 1 then
-				if C ~= 0 then
-					limit = A+C-2;
-				else
-					limit = limit+A
-				end
-
-				loop = 0;
-				for i = A, limit do
-					loop = loop + 1;
-					stack[i] = results[loop];
-				end
-			end
-		end,
-		[29] = function (instruction)	-- TAILCALL
-			local A = instruction.A;
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack = stack;
-			local args, results;
-			local top, limit, loop = top
-
-			args = {};
-			if B ~= 1 then
-				if B ~= 0 then
-					limit = A+B-1;
-				else
-					limit = top
-				end
-
-				loop = 0
-				for i = A+1, limit do
-					loop = loop + 1
-					args[#args+1] = stack[i];
-				end
-
-				results = {stack[A](unpack(args, 1, limit-A))};
-			else
-				results = {stack[A]()};
-			end
-
-			return true, results
-		end,
-		[30] = function(instruction) -- RETURN
-			--TODO: CLOSE
-			local A = instruction.A;
-			local B = instruction.B;
-			local stack = stack;
-			local limit;
-			local loop, output;
-
-			if B == 1 then
-				return true;
-			end
-			if B == 0 then
-				limit = top
-			else
-				limit = A + B - 2;
-			end
-
-			output = {};
-			local loop = 0
-			for i = A, limit do
-				loop = loop + 1
-				output[loop] = stack[i];
-			end
-			return true, output;
-		end,
-		[31] = function(instruction)	-- FORLOOP
-			local A = instruction.A
-			local stack = stack
-
-			local step = stack[A+2]
-			local index = stack[A] + step
-			stack[A] = index
-
-			if step > 0 then
-				if index <= stack[A+1] then
-					IP = IP + instruction.sBx
-					stack[A+3] = index
-				end
-			else
-				if index >= stack[A+1] then
-					IP = IP + instruction.sBx
-					stack[A+3] = index
-				end
-			end
-		end,
-		[32] = function(instruction)	-- FORPREP
-			local A = instruction.A
-			local stack = stack
-
-			stack[A] = stack[A] - stack[A+2]
-			IP = IP + instruction.sBx
-		end,
-		[33] = function(instruction)	-- TFORLOOP
-			local A = instruction.A
-			local B = instruction.B
-			local C = instruction.C
-			local stack = stack
-
-			local offset = A+2
-			local result = {stack[A](stack[A+1], stack[A+2])}
-			for i = 1, C do
-				stack[offset+i] = result[i]
-			end
-
-			if stack[A+3] ~= nil then
-				stack[A+2] = stack[A+3]
-			else
-				IP = IP + 1
-			end
-		end,
-		[34] = function(instruction)	-- SETLIST
-			local A = instruction.A
-			local B = instruction.B
-			local C = instruction.C
-			local stack = stack
-
-			if C == 0 then
-				error("NYI: extended SETLIST")
-			else
-				local offset = (C - 1) * 50
-				local t = stack[A]
-
-				if B == 0 then
-					B = top
-				end
-				for i = 1, B do
-					t[offset+i] = stack[A+i]
-				end
-			end
-		end,
-		[35] = function(instruction)	-- CLOSE
-			io.stderr:write("NYI: CLOSE")
-			io.stderr:flush()
-		end,
-		[36] = function(instruction)	-- CLOSURE
-			local proto = prototypes[instruction.Bx]
-			local instructions = instructions
-			local stack = stack
-
-			local indices = {}
-			local new_upvals = setmetatable({},
-				{
-					__index = function(t, k)
-						local upval = indices[k]
-						return upval.segment[upval.offset]
-					end,
-					__newindex = function(t, k, v)
-						local upval = indices[k]
-						upval.segment[upval.offset] = v
-					end
-				}
-			)
-			for i = 1, proto.upvalues do
-				local movement = instructions[IP]
-				if movement.opcode == 0 then -- MOVE
-					indices[i-1] = {segment = stack, offset = movement.B}
-				elseif instructions[IP].opcode == 4 then -- GETUPVAL
-					indices[i-1] = {segment = upvalues, offset = movement.B}
-				end
-				IP = IP + 1
-			end
-
-			local _, func = create_wrapper(proto, new_upvals)
-			stack[instruction.A] = func
-		end,
-		[37] = function(instruction)	-- VARARG
-			local A = instruction.A
-			local B = instruction.B
-			local stack, vararg = stack, vararg
-
-			for i = A, A + (B > 0 and B - 1 or vararg_size) do
-				stack[i] = vararg[i - A]
-			end
-		end,
-	}
-	local function loop()
-		local instructions = instructions
-		local instruction, a, b
-
-		while true do
-			instruction = instructions[IP];
-			IP = IP + 1
-			a, b = opcode_funcs[instruction.opcode](instruction);
-			if a then
-				return b;
-			end
-		end
-	end
-
-	local debugging = {
-		
-	};
-
-	local function func(...)
-		local local_stack = {};
-		local ghost_stack = {};
-
-		top = -1
-		stack = setmetatable(local_stack, {
-			__index = ghost_stack;
-			__newindex = function(t, k, v)
-				if k > top and v then
-					top = k
-				end
-				ghost_stack[k] = v
-			end;
-		})
-		local args = {...};
-		vararg = {}
-		vararg_size = select("#", ...) - 1
-		for i = 0, vararg_size do
-			local_stack[i] = args[i+1];
-			vararg[i] = args[i+1]
-		end
-
-		environment = getfenv();
-		IP = 1;
-		local thread = coroutine.create(loop)
-		local a, b = coroutine.resume(thread)
-		
-		if a then
-			if b then
-				return unpack(b);
-			end
-			return;
-		else
-			--TODO error converting
-			local name = cache.name;
-			local line = cache.debug.lines[IP];
-			local err  = b:gsub("(.-:)", "");
-			local output = "";
-			output = output .. (name and name .. ":" or "");
-			output = output .. (line and line .. ":" or "");
-			output = output .. b;
-			error(output, 0);
-
-		end
-	end
-
-	return debugging, func;
+function e()local n,e,c,o=c:byte(l,l+3);l=l+4;return o*16777216+c*65536+e*256+n
 end
-
-local function wrap(cache, upvalues)
-	local instructions = cache.instructions;
-	local constants    = cache.constants;
-	local prototypes   = cache.prototypes;
-
-	
-	local stack, top
-	local environment
-	local IP = 1;	-- instruction pointer
-	local vararg, vararg_size
-
-	local function loop()
-		local instructions = instructions
-		local instruction, a, b
-
-		--[[while true do
-			instruction = instructions[IP];
-			IP = IP + 1
-			a, b = opcode_funcs[instruction.opcode](instruction);
-			if a then
-				return b;
-			end
-		end]]
-		
-instruction = instructions[IP];IP = IP + 1
-local key = constants[instruction.Bx].data;
-        stack[instruction.A] = environment[key];
-instruction = instructions[IP];IP = IP + 1
-stack[instruction.A] = constants[instruction.Bx].data;
-instruction = instructions[IP];IP = IP + 1
-local A = instruction.A;
-        local B = instruction.B;
-        local C = instruction.C;
-        local stack = stack;
-        local args, results;
-        local limit, loop
-
-        args = {};
-        if B ~= 1 then
-            if B ~= 0 then
-                limit = A+B-1;
-            else
-                limit = top
-            end
-
-            loop = 0
-            for i = A+1, limit do
-                loop = loop + 1
-                args[loop] = stack[i];
-            end
-
-            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
-        else
-            limit, results = handle_return(stack[A]())
-        end
-
-        top = A - 1
-
-        if C ~= 1 then
-            if C ~= 0 then
-                limit = A+C-2;
-            else
-                limit = limit+A
-            end
-
-            loop = 0;
-            for i = A, limit do
-                loop = loop + 1;
-                stack[i] = results[loop];
-            end
-        end
-instruction = instructions[IP];IP = IP + 1
-local proto = prototypes[instruction.Bx]
-        local instructions = instructions
-        local stack = stack
-
-        local indices = {}
-        local new_upvals = setmetatable({},
-            {
-                __index = function(t, k)
-                    local upval = indices[k]
-                    return upval.segment[upval.offset]
-                end,
-                __newindex = function(t, k, v)
-                    local upval = indices[k]
-                    upval.segment[upval.offset] = v
-                end
-            }
-        )
-        for i = 1, proto.upvalues do
-            local movement = instructions[IP]
-            if movement.opcode == 0 then -- MOVE
-                indices[i-1] = {segment = stack, offset = movement.B}
-            elseif instructions[IP].opcode == 4 then -- GETUPVAL
-                indices[i-1] = {segment = upvalues, offset = movement.B}
-            end
-            IP = IP + 1
-        end
-
-        local _, func = create_wrapper(proto, new_upvals)
-        stack[instruction.A] = func
-instruction = instructions[IP];IP = IP + 1
-local key = constants[instruction.Bx].data;
-        environment[key] = stack[instruction.A];
-instruction = instructions[IP];IP = IP + 1
-local key = constants[instruction.Bx].data;
-        stack[instruction.A] = environment[key];
-instruction = instructions[IP];IP = IP + 1
-local A = instruction.A;
-        local B = instruction.B;
-        local C = instruction.C;
-        local stack = stack;
-        local args, results;
-        local limit, loop
-
-        args = {};
-        if B ~= 1 then
-            if B ~= 0 then
-                limit = A+B-1;
-            else
-                limit = top
-            end
-
-            loop = 0
-            for i = A+1, limit do
-                loop = loop + 1
-                args[loop] = stack[i];
-            end
-
-            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
-        else
-            limit, results = handle_return(stack[A]())
-        end
-
-        top = A - 1
-
-        if C ~= 1 then
-            if C ~= 0 then
-                limit = A+C-2;
-            else
-                limit = limit+A
-            end
-
-            loop = 0;
-            for i = A, limit do
-                loop = loop + 1;
-                stack[i] = results[loop];
-            end
-        end
-instruction = instructions[IP];IP = IP + 1
---TODO: CLOSE
-        local A = instruction.A;
-        local B = instruction.B;
-        local stack = stack;
-        local limit;
-        local loop, output;
-
-        if B == 1 then
-            return true;
-        end
-        if B == 0 then
-            limit = top
-        else
-            limit = A + B - 2;
-        end
-
-        output = {};
-        local loop = 0
-        for i = A, limit do
-            loop = loop + 1
-            output[loop] = stack[i];
-        end
-        return true, output;
-	end
-
-	local debugging = {
-		
-	};
-
-	local function func(...)
-		local local_stack = {};
-		local ghost_stack = {};
-
-		top = -1
-		stack = setmetatable(local_stack, {
-			__index = ghost_stack;
-			__newindex = function(t, k, v)
-				if k > top and v then
-					top = k
-				end
-				ghost_stack[k] = v
-			end;
-		})
-		local args = {...};
-		vararg = {}
-		vararg_size = select("#", ...) - 1
-		for i = 0, vararg_size do
-			local_stack[i] = args[i+1];
-			vararg[i] = args[i+1]
-		end
-
-		environment = getfenv();
-		IP = 1;
-		local thread = coroutine.create(loop)
-		local status,a, b = coroutine.resume(thread)
-		if status and a then
-			if b then
-				return unpack(b);
-			end
-			return;
-		else
-			--TODO error converting
-			local name = cache.name;
-			local line = cache.debug.lines[IP];
-			local err  = b:gsub("(.-:)", "");
-			local output = "";
-			output = output .. (name and name .. ":" or "");
-			output = output .. (line and line .. ":" or "");
-			output = output .. b;
-			error(output, 0);
-
-		end
-	end
-
-	return debugging, func;
+function t()local n=e();local l=e();return l*4294967296+n;end
+function a()local n=e()local l=e()return(-2*o(l,32)+1)*(2^(o(l,21,31)-1023))*((o(l,1,20)*(2^32)+n)/(2^52)+1)end
+function u(n)local o;if n then
+o=c:sub(l,l+n-1);l=l+n;else
+n=e();if n==0 then return;end
+o=c:sub(l,l+n-1);l=l+n;end
+return o;end
 end
-
-load_bytecode = function(bytecode)
-	local cache = decode_bytecode(bytecode);
-	local _, func = wrap(cache);
-	return func;
-end;
-
-load_bytecode("\0\8\0\0\0\0\2\0\1\2\1\0\1\2\1\0\2\0\0\2\2\0\2\2\0\1\1\1\0\1\1\0\3\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\3\0\0\0\120\100\0\4\2\0\0\0\100\0\1\0\0\0\0\4\0\0\0\5\0\2\0\1\1\2\1\28\0\1\2\1\30\0\1\1\0\2\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\4\0\0\0\108\111\108\0\0\0\0\0")()
+local function t(i)local c;local f={};local r={};local d={};local l={lines={};};c={instructions=f;constants=r;prototypes=d;debug=l;};local o;c.upvalues=n();do
+o=e();for c=1,o do
+local l={};if(i==true)then
+l.opcode=(n())end
+l.A=n();local o=n()l.type=o;if o==1 then
+l.B=n()l.C=n()elseif o==2 then
+l.Bx=n()elseif o==3 then
+l.sBx=e();end
+f[c]=l;end
+end
+do
+o=e();for o=1,o do
+local l={};local e=n();l.type=e;if e==1 then
+l.data=(n()~=0);elseif e==3 then
+l.data=a();elseif e==4 then
+l.data=u():sub(1,-2);end
+r[o-1]=l;end
+end
+do
+o=e();for l=1,o do
+d[l-1]=t(true);end
+end
+return c;end
+return t();end
+local function d(...)local e=select("#",...)local l={...}return e,l
+end
+local function A(a,l)local h=a.instructions;local e=a.constants;local l=a.prototypes;local t,o
+local u
+local c=1;local s,i
+local d={[5]=function(l)local e=e[l.Bx].data;t[l.A]=u[e];end,[1]=function(l)t[l.A]=e[l.Bx].data;end,[28]=function(l)local e=l.A;local f=l.B;local r=l.C;local c=t;local a,t;local l,n
+a={};if f~=1 then
+if f~=0 then
+l=e+f-1;else
+l=o
+end
+n=0
+for e=e+1,l do
+n=n+1
+a[n]=c[e];end
+l,t=d(c[e](unpack(a,1,l-e)))else
+l,t=d(c[e]())end
+o=e-1
+if r~=1 then
+if r~=0 then
+l=e+r-2;else
+l=l+e
+end
+n=0;for l=e,l do
+n=n+1;c[l]=t[n];end
+end
+end,[30]=function(l)local c=l.A;local e=l.B;local a=t;local n;local t,l;if e==1 then
+return true;end
+if e==0 then
+n=o
+else
+n=c+e-2;end
+l={};local e=0
+for n=c,n do
+e=e+1
+l[e]=a[n];end
+return true,l;end,}local function r()local o=h
+local l,n,e
+while true do
+l=o[c];c=c+1
+n,e=d[l.opcode](l);if n then
+return e;end
+end
+end
+local f={};local function h(...)local n={};local d={};o=-1
+t=setmetatable(n,{__index=d;__newindex=function(n,l,e)if l>o and e then
+o=l
+end
+d[l]=e
+end;})local e={...};s={}i=select("#",...)-1
+for l=0,i do
+n[l]=e[l+1];s[l]=e[l+1]end
+u=getfenv();c=1;local l=coroutine.create(r)local l,e=coroutine.resume(l)if l then
+if e then
+return unpack(e);end
+return;else
+local n=a.name;local o=a.debug.lines[c];local l=e:gsub("(.-:)","");local l="";l=l..(n and n..":"or"");l=l..(o and o..":"or"");l=l..e;error(l,0);end
+end
+return f,h;end
+local function _(f,x)local e=f.instructions;local i=f.constants;local _=f.prototypes;local u,c
+local s
+local l=1;local b,B
+local function g()local t=e
+local e,n,n
+e=t[l];l=l+1
+local n=i[e.Bx].data;u[e.A]=s[n];e=t[l];l=l+1
+u[e.A]=i[e.Bx].data;e=t[l];l=l+1
+local o=e.A;local f=e.B;local p=e.C;local r=u;local h,u;local n,a
+h={};if f~=1 then
+if f~=0 then
+n=o+f-1;else
+n=c
+end
+a=0
+for l=o+1,n do
+a=a+1
+h[a]=r[l];end
+n,u=d(r[o](unpack(h,1,n-o)))else
+n,u=d(r[o]())end
+c=o-1
+if p~=1 then
+if p~=0 then
+n=o+p-2;else
+n=n+o
+end
+a=0;for l=o,n do
+a=a+1;r[l]=u[a];end
+end
+e=t[l];l=l+1
+local a=_[e.Bx]local t=t
+local n=r
+local o={}local r=setmetatable({},{__index=function(e,l)local l=o[l]return l.segment[l.offset]end,__newindex=function(n,l,e)local l=o[l]l.segment[l.offset]=e
+end})for c=1,a.upvalues do
+local e=t[l]if e.opcode==0 then
+o[c-1]={segment=n,offset=e.B}elseif t[l].opcode==4 then
+o[c-1]={segment=x,offset=e.B}end
+l=l+1
+end
+local a,o=A(a,r)n[e.A]=o
+e=t[l];l=l+1
+local o=i[e.Bx].data;s[o]=n[e.A];e=t[l];l=l+1
+local o=i[e.Bx].data;n[e.A]=s[o];e=t[l];l=l+1
+local o=e.A;local u=e.B;local f=e.C;local r=n;local s,i;local n,a
+s={};if u~=1 then
+if u~=0 then
+n=o+u-1;else
+n=c
+end
+a=0
+for l=o+1,n do
+a=a+1
+s[a]=r[l];end
+n,i=d(r[o](unpack(s,1,n-o)))else
+n,i=d(r[o]())end
+c=o-1
+if f~=1 then
+if f~=0 then
+n=o+f-2;else
+n=n+o
+end
+a=0;for l=o,n do
+a=a+1;r[l]=i[a];end
+end
+e=t[l];l=l+1
+local o=e.A;local e=e.B;local a=r;local n;local t,l;if e==1 then
+return true;end
+if e==0 then
+n=c
+else
+n=o+e-2;end
+l={};local e=0
+for n=o,n do
+e=e+1
+l[e]=a[n];end
+return true,l;end
+local t={};local function a(...)local e={};local n={};c=-1
+u=setmetatable(e,{__index=n;__newindex=function(o,l,e)if l>c and e then
+c=l
+end
+n[l]=e
+end;})local n={...};b={}B=select("#",...)-1
+for l=0,B do
+e[l]=n[l+1];b[l]=n[l+1]end
+s=getfenv();l=1;local e=coroutine.create(g)local n,o,e=coroutine.resume(e)if n and o then
+if e then
+return unpack(e);end
+return;else
+local o=f.name;local n=f.debug.lines[l];local l=e:gsub("(.-:)","");local l="";l=l..(o and o..":"or"");l=l..(n and n..":"or"");l=l..e;error(l,0);end
+end
+return t,a;end
+load_bytecode=function(l)local l=x(l);local e,l=_(l);return l;end;load_bytecode("\0\b\0\0\0\0\2\0\1\2\1\0\1\2\1\0\2\0\0\2\2\0\2\2\0\1\1\1\0\1\1\0\3\0\0\0\4\6\0\0\0print\0\4\3\0\0\0xd\0\4\2\0\0\0d\0\1\0\0\0\0\4\0\0\0\5\0\2\0\1\1\2\1\28\0\1\2\1\30\0\1\1\0\2\0\0\0\4\6\0\0\0print\0\4\4\0\0\0lol\0\0\0\0\0")()

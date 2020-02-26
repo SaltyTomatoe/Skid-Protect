@@ -6,11 +6,10 @@ namespace Skid_Protect
 	class Program
     {
 		static string directory = Directory.GetCurrentDirectory();
-
+		static string OS = Environment.OSVersion.Platform == PlatformID.Unix ? "/usr/bin/" : "";
 		static byte[] Get_Bytecode(string file)
         {
             string code = File.ReadAllText(file);
-			string OS = Environment.OSVersion.Platform == PlatformID.Unix ? "/usr/bin/" : "";
 			string l = Path.Combine(directory, "luac.out");
 			string d = Path.Combine(directory, file);
 			Console.WriteLine("Checking file...\n");
@@ -55,12 +54,37 @@ namespace Skid_Protect
 
 			Console.WriteLine("\nFinished generating LUA VM");
 
-			File.WriteAllText(Path.Combine(directory,"Output.lua"), Compiled_VM);
+			string output_file = Path.Combine(directory, "t2.lua");
+			string minified_finish = Path.Combine(directory, "Output.lua");
+			File.WriteAllText(output_file, Compiled_VM);
 
+			Console.WriteLine("\nMinifying");
+			Process proc = new Process
+			{
+				StartInfo =
+						   {
+							   FileName  = $"{OS}lua",
+							   Arguments = "Lua/Minifier/luasrcdiet.lua --maximum --opt-entropy --opt-emptylines --opt-eols --opt-numbers --opt-whitespace --opt-locals --noopt-strings  -o \"" + minified_finish + "\" \"" + output_file + "\"",
+							   UseShellExecute = false,
+							   RedirectStandardError = true,
+							   RedirectStandardOutput = true
+						   }
+			};
+
+			string err = "";
+
+			proc.OutputDataReceived += (sender, args) => { err += args.Data;};
+			proc.ErrorDataReceived += (sender, args) => { err += args.Data;};
+
+			proc.Start();
+			proc.BeginOutputReadLine();
+			proc.BeginErrorReadLine();
+			proc.WaitForExit();
+			File.Delete(output_file);
 			// the code that you want to measure comes here
 			watch.Stop();
 			var elapsedMs = watch.ElapsedMilliseconds;
-			Console.WriteLine("Elapsed Time: " + elapsedMs + "ms");
+			Console.WriteLine("Finished.\nElapsed Time: " + elapsedMs + "ms");
 			Console.ReadKey();
             return;
         }

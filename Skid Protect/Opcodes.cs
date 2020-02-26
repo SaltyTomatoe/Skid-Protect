@@ -754,7 +754,7 @@ namespace Skid_Protect
 				stack[i] = vararg[i - A]
 			end
 		end," }
-        }
+        };
 
     }
 }
