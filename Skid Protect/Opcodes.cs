@@ -14,20 +14,20 @@ namespace Skid_Protect
         if instruction.C ~= 0 then
             IP = IP + 1
         end" },
-            { 3, @"local stack = stack
+            { 3, @"
         for i = instruction.A, instruction.B do
             stack[i] = nil
         end" },
             { 4, @"stack[instruction.A] = upvalues[instruction.B]" },
             {5, @"stack[instruction.A] = environment[constants[instruction.Bx].data];" },
-            {6, @"local C = instruction.C
-        local stack = stack
+            {6, @"C = instruction.C
+        
         C = C > 255 and constants[C-256].data or stack[C]
         stack[instruction.A] = stack[instruction.B][C];" },
             {7,@"environment[constants[instruction.Bx].data] = stack[instruction.A];" },
             {8,@"upvalues[instruction.B] = stack[instruction.A]" },
-            {9,@" local B = instruction.B;
-        local C = instruction.C;
+            {9,@" B = instruction.B;
+        C = instruction.C;
         local stack, constants = stack, constants;
 
         B = B > 255 and constants[B-256].data or stack[B];
@@ -35,58 +35,58 @@ namespace Skid_Protect
 
         stack[instruction.A][B] = C" },
             {10,@"stack[instruction.A] = {}" },
-            {11,@"local A = instruction.A
+            {11,@"A = instruction.A
         local B = instruction.B
-        local C = instruction.C
-        local stack = stack
+        C = instruction.C
+        
 
         B = stack[B]
         C = C > 255 and constants[C-256].data or stack[C]
 
         stack[A+1] = B
         stack[A]   = B[C]" },
-            {12,@"local B = instruction.B;
-        local C = instruction.C;
+            {12,@"B = instruction.B;
+        C = instruction.C;
         local stack, constants = stack, constants;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
 
         stack[instruction.A] = B+C;" },
-            {13,@"local B = instruction.B;
-        local C = instruction.C;
+            {13,@"B = instruction.B;
+        C = instruction.C;
         local stack, constants = stack, constants;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
 
         stack[instruction.A] = B - C;" },
-            {14,@"local B = instruction.B;
-        local C = instruction.C;
+            {14,@"B = instruction.B;
+        C = instruction.C;
         local stack, constants = stack, constants;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
 
         stack[instruction.A] = B * C;" },
-            {15,@"local B = instruction.B;
-        local C = instruction.C;
+            {15,@"B = instruction.B;
+        C = instruction.C;
         local stack, constants = stack, constants;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
 
         stack[instruction.A] = B / C;" },
-            {16,@"local B = instruction.B;
-        local C = instruction.C;
+            {16,@"B = instruction.B;
+        C = instruction.C;
         local stack, constants = stack, constants;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
 
         stack[instruction.A] = B % C;" },
-            {17,@"local B = instruction.B;
-        local C = instruction.C;
+            {17,@"B = instruction.B;
+        C = instruction.C;
         local stack, constants = stack, constants;
 
         B = B > 255 and constants[B-256].data or stack[B];
@@ -103,9 +103,9 @@ namespace Skid_Protect
         end
         stack[instruction.A] = result" },
             {22,@"IP = IP + instruction.sBx" },
-            {23,@"local A = instruction.A
+            {23,@"A = instruction.A
         local B = instruction.B
-        local C = instruction.C
+        C = instruction.C
         local stack, constants = stack, constants
 
         A = A ~= 0
@@ -114,9 +114,9 @@ namespace Skid_Protect
         if (B == C) ~= A then
             IP = IP + 1
         end" },
-            {24,@"local A = instruction.A
+            {24,@"A = instruction.A
         local B = instruction.B
-        local C = instruction.C
+        C = instruction.C
         local stack, constants = stack, constants
 
         A = A ~= 0
@@ -125,9 +125,9 @@ namespace Skid_Protect
         if (B < C) ~= A then
             IP = IP + 1
         end" },
-            {25,@"local A = instruction.A
+            {25,@"A = instruction.A
         local B = instruction.B
-        local C = instruction.C
+        C = instruction.C
         local stack, constants = stack, constants
 
         A = A ~= 0
@@ -140,7 +140,7 @@ namespace Skid_Protect
         if (not not A) == (instruction.C == 0) then
             IP = IP + 1
         end" },
-            {27,@"local stack = stack
+            {27,@"
         local B = stack[instruction.B]
 
         if (not not B) == (instruction.C == 0) then
@@ -148,10 +148,10 @@ namespace Skid_Protect
         else
             stack[instruction.A] = B
         end" },
-            {28,@"local A = instruction.A;
-        local B = instruction.B;
-        local C = instruction.C;
-        local stack = stack;
+            {28,@"A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
         local args, results;
         local limit, loop
 
@@ -189,10 +189,10 @@ namespace Skid_Protect
                 stack[i] = results[loop];
             end
         end" },
-            {29,@"local A = instruction.A;
-        local B = instruction.B;
-        local C = instruction.C;
-        local stack = stack;
+            {29,@"A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
         local args, results;
         local top, limit, loop = top
 
@@ -217,9 +217,9 @@ namespace Skid_Protect
 
         return true, results" },
             {30,@"--TODO: CLOSE
-        local A = instruction.A;
-        local B = instruction.B;
-        local stack = stack;
+        A = instruction.A;
+        B = instruction.B;
+       
         local limit;
         local loop, output;
 
@@ -239,8 +239,8 @@ namespace Skid_Protect
             output[loop] = stack[i];
         end
         return true, output;" },
-            {31,@"local A = instruction.A
-        local stack = stack
+            {31,@"A = instruction.A
+        
 
         local step = stack[A+2]
         local index = stack[A] + step
@@ -257,15 +257,15 @@ namespace Skid_Protect
                 stack[A+3] = index
             end
         end" },
-            {32,@"local A = instruction.A
-        local stack = stack
+            {32,@"A = instruction.A
+        
 
         stack[A] = stack[A] - stack[A+2]
         IP = IP + instruction.sBx" },
-            {33,@"local A = instruction.A
+            {33,@"A = instruction.A
         local B = instruction.B
-        local C = instruction.C
-        local stack = stack
+        C = instruction.C
+        
 
         local offset = A+2
         local result = {stack[A](stack[A+1], stack[A+2])}
@@ -278,10 +278,10 @@ namespace Skid_Protect
         else
             IP = IP + 1
         end" },
-            {34,@"local A = instruction.A
+            {34,@"A = instruction.A
         local B = instruction.B
-        local C = instruction.C
-        local stack = stack
+        C = instruction.C
+        
 
         if C == 0 then
             error('NYI: extended SETLIST')
@@ -300,7 +300,7 @@ namespace Skid_Protect
         io.stderr:flush()" },
             {36,@"local proto = prototypes[instruction.Bx]
         local instructions = instructions
-        local stack = stack
+        
 
         local indices = {}
         local new_upvals = setmetatable({},
@@ -327,7 +327,7 @@ namespace Skid_Protect
 
         local _, func = create_wrapper(proto, new_upvals)
         stack[instruction.A] = func" },
-            {37,@"local A = instruction.A
+            {37,@"A = instruction.A
         local B = instruction.B
         local stack, vararg = stack, vararg
 

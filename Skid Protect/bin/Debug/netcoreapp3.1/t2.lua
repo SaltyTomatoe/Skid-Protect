@@ -166,14 +166,29 @@ local function create_wrapper(cache, upvalues)
 	local vararg, vararg_size
 	local opcode_funcs = {
 	
-[68] = function(instruction)	-- GETGLOBAL
+[99] = function(instruction)	-- LOADBOOL
+			stack[instruction.A] = instruction.B ~= 0
+			if instruction.C ~= 0 then
+				IP = IP + 1
+			end
+		end,
+[39] = function(instruction)	-- TEST
+			local A = stack[instruction.A];
+			if (not not A) == (instruction.C == 0) then
+				IP = IP + 1
+			end
+		end,
+[59] = function(instruction)	-- JUMP
+			IP = IP + instruction.sBx
+		end,
+[45] = function(instruction)	-- GETGLOBAL
 			local key = constants[instruction.Bx].data;
 			stack[instruction.A] = environment[key];
 		end,
-[98] = function(instruction)	-- LOADK
+[25] = function(instruction)	-- LOADK
 			stack[instruction.A] = constants[instruction.Bx].data;
 		end,
-[8] = function(instruction)	-- CALL
+[32] = function(instruction)	-- CALL
 			local A = instruction.A;
 			local B = instruction.B;
 			local C = instruction.C;
@@ -216,7 +231,7 @@ local function create_wrapper(cache, upvalues)
 				end
 			end
 		end,
-[21] = function(instruction) -- RETURN
+[85] = function(instruction) -- RETURN
 			--TODO: CLOSE
 			local A = instruction.A;
 			local B = instruction.B;
@@ -255,11 +270,6 @@ local function create_wrapper(cache, upvalues)
 			end
 		end
 	end
-
-	local debugging = {
-		
-	};
-
 	local function func(...)
 		local local_stack = {};
 		local ghost_stack = {};
@@ -293,20 +303,20 @@ local function create_wrapper(cache, upvalues)
 			end
 			return;
 		else
-			--TODO error converting
+			--[[TODO error converting
 			local name = cache.name;
-			local line = cache.debug.lines[IP];
+			local line = cache.debug.lines[IP];]]
 			local err  = b:gsub("(.-:)", "");
-			local output = "";
+			--[[local output = "";
 			output = output .. (name and name .. ":" or "");
 			output = output .. (line and line .. ":" or "");
-			output = output .. b;
-			error(output, 0);
+			output = output .. b;]]
+			error(err, 0);
 
 		end
 	end
 
-	return debugging, func;
+	return func;
 end
 
 local function wrap(cache, upvalues)
@@ -322,17 +332,17 @@ local function wrap(cache, upvalues)
 
 	local function loop()
 		local instructions = instructions
-		local instruction, a, b
+		local instruction, a, b,A,B,C
 		
 instruction = instructions[IP];IP = IP + 1
 stack[instruction.A] = environment[constants[instruction.Bx].data];
 instruction = instructions[IP];IP = IP + 1
 stack[instruction.A] = constants[instruction.Bx].data;
 instruction = instructions[IP];IP = IP + 1
-local A = instruction.A;
-        local B = instruction.B;
-        local C = instruction.C;
-        local stack = stack;
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
         local args, results;
         local limit, loop
 
@@ -371,12 +381,7 @@ local A = instruction.A;
             end
         end
 instruction = instructions[IP];IP = IP + 1
-local stack = stack
-        for i = instruction.A, instruction.B do
-            stack[i] = nil
-        end
-instruction = instructions[IP];IP = IP + 1
-environment[constants[instruction.Bx].data] = stack[instruction.A];
+stack[instruction.A] = constants[instruction.Bx].data;
 instruction = instructions[IP];IP = IP + 1
 stack[instruction.A] = environment[constants[instruction.Bx].data];
 instruction = instructions[IP];IP = IP + 1
@@ -384,12 +389,12 @@ stack[instruction.A] = constants[instruction.Bx].data;
 instruction = instructions[IP];IP = IP + 1
 stack[instruction.A] = environment[constants[instruction.Bx].data];
 instruction = instructions[IP];IP = IP + 1
-stack[instruction.A] = environment[constants[instruction.Bx].data];
+stack[instruction.A] = stack[instruction.B];
 instruction = instructions[IP];IP = IP + 1
-local A = instruction.A;
-        local B = instruction.B;
-        local C = instruction.C;
-        local stack = stack;
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
         local args, results;
         local limit, loop
 
@@ -428,10 +433,17 @@ local A = instruction.A;
             end
         end
 instruction = instructions[IP];IP = IP + 1
-local A = instruction.A;
-        local B = instruction.B;
-        local C = instruction.C;
-        local stack = stack;
+local B = instruction.B
+        local result = stack[B]
+        for i = B+1, instruction.C do
+            result = result .. stack[i]
+        end
+        stack[instruction.A] = result
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
         local args, results;
         local limit, loop
 
@@ -474,10 +486,10 @@ stack[instruction.A] = environment[constants[instruction.Bx].data];
 instruction = instructions[IP];IP = IP + 1
 stack[instruction.A] = constants[instruction.Bx].data;
 instruction = instructions[IP];IP = IP + 1
-local A = instruction.A;
-        local B = instruction.B;
-        local C = instruction.C;
-        local stack = stack;
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
         local args, results;
         local limit, loop
 
@@ -515,10 +527,73 @@ local A = instruction.A;
                 stack[i] = results[loop];
             end
         end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+C = instruction.C
+        
+        C = C > 255 and constants[C-256].data or stack[C]
+        stack[instruction.A] = stack[instruction.B][C];
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = stack[instruction.B];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = stack[instruction.B];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A
+        
+
+        stack[A] = stack[A] - stack[A+2]
+        IP = IP + instruction.sBx
 instruction = instructions[IP];IP = IP + 1
 local proto = prototypes[instruction.Bx]
         local instructions = instructions
-        local stack = stack
+        
 
         local indices = {}
         local new_upvals = setmetatable({},
@@ -546,12 +621,909 @@ local proto = prototypes[instruction.Bx]
         local _, func = create_wrapper(proto, new_upvals)
         stack[instruction.A] = func
 instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A
+        
+
+        local step = stack[A+2]
+        local index = stack[A] + step
+        stack[A] = index
+
+        if step > 0 then
+            if index <= stack[A+1] then
+                IP = IP + instruction.sBx
+                stack[A+3] = index
+            end
+        else
+            if index >= stack[A+1] then
+                IP = IP + instruction.sBx
+                stack[A+3] = index
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+C = instruction.C
+        
+        C = C > 255 and constants[C-256].data or stack[C]
+        stack[instruction.A] = stack[instruction.B][C];
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+B = instruction.B;
+        C = instruction.C;
+        local stack, constants = stack, constants;
+
+        B = B > 255 and constants[B-256].data or stack[B];
+        C = C > 255 and constants[C-256].data or stack[C];
+
+        stack[instruction.A] = B - C;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+local B = instruction.B
+        local result = stack[B]
+        for i = B+1, instruction.C do
+            result = result .. stack[i]
+        end
+        stack[instruction.A] = result
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+C = instruction.C
+        
+        C = C > 255 and constants[C-256].data or stack[C]
+        stack[instruction.A] = stack[instruction.B][C];
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
 stack[instruction.A] = stack[instruction.B];
 instruction = instructions[IP];IP = IP + 1
-local A = instruction.A;
-        local B = instruction.B;
-        local C = instruction.C;
-        local stack = stack;
+stack[instruction.A] = {}
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = stack[instruction.B];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A
+        
+
+        stack[A] = stack[A] - stack[A+2]
+        IP = IP + instruction.sBx
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = stack[instruction.B];
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = stack[instruction.B];
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+local B = instruction.B
+        local result = stack[B]
+        for i = B+1, instruction.C do
+            result = result .. stack[i]
+        end
+        stack[instruction.A] = result
+instruction = instructions[IP];IP = IP + 1
+ B = instruction.B;
+        C = instruction.C;
+        local stack, constants = stack, constants;
+
+        B = B > 255 and constants[B-256].data or stack[B];
+        C = C > 255 and constants[C-256].data or stack[C];
+
+        stack[instruction.A][B] = C
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A
+        
+
+        local step = stack[A+2]
+        local index = stack[A] + step
+        stack[A] = index
+
+        if step > 0 then
+            if index <= stack[A+1] then
+                IP = IP + instruction.sBx
+                stack[A+3] = index
+            end
+        else
+            if index >= stack[A+1] then
+                IP = IP + instruction.sBx
+                stack[A+3] = index
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+C = instruction.C
+        
+        C = C > 255 and constants[C-256].data or stack[C]
+        stack[instruction.A] = stack[instruction.B][C];
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+B = instruction.B;
+        C = instruction.C;
+        local stack, constants = stack, constants;
+
+        B = B > 255 and constants[B-256].data or stack[B];
+        C = C > 255 and constants[C-256].data or stack[C];
+
+        stack[instruction.A] = B - C;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+local B = instruction.B
+        local result = stack[B]
+        for i = B+1, instruction.C do
+            result = result .. stack[i]
+        end
+        stack[instruction.A] = result
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+C = instruction.C
+        
+        C = C > 255 and constants[C-256].data or stack[C]
+        stack[instruction.A] = stack[instruction.B][C];
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = stack[instruction.B];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = stack[instruction.B];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A
+        
+
+        stack[A] = stack[A] - stack[A+2]
+        IP = IP + instruction.sBx
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = stack[instruction.B];
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+C = instruction.C
+        
+        C = C > 255 and constants[C-256].data or stack[C]
+        stack[instruction.A] = stack[instruction.B][C];
+instruction = instructions[IP];IP = IP + 1
+ B = instruction.B;
+        C = instruction.C;
+        local stack, constants = stack, constants;
+
+        B = B > 255 and constants[B-256].data or stack[B];
+        C = C > 255 and constants[C-256].data or stack[C];
+
+        stack[instruction.A][B] = C
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A
+        
+
+        local step = stack[A+2]
+        local index = stack[A] + step
+        stack[A] = index
+
+        if step > 0 then
+            if index <= stack[A+1] then
+                IP = IP + instruction.sBx
+                stack[A+3] = index
+            end
+        else
+            if index >= stack[A+1] then
+                IP = IP + instruction.sBx
+                stack[A+3] = index
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+C = instruction.C
+        
+        C = C > 255 and constants[C-256].data or stack[C]
+        stack[instruction.A] = stack[instruction.B][C];
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+B = instruction.B;
+        C = instruction.C;
+        local stack, constants = stack, constants;
+
+        B = B > 255 and constants[B-256].data or stack[B];
+        C = C > 255 and constants[C-256].data or stack[C];
+
+        stack[instruction.A] = B - C;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+local B = instruction.B
+        local result = stack[B]
+        for i = B+1, instruction.C do
+            result = result .. stack[i]
+        end
+        stack[instruction.A] = result
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = environment[constants[instruction.Bx].data];
+instruction = instructions[IP];IP = IP + 1
+C = instruction.C
+        
+        C = C > 255 and constants[C-256].data or stack[C]
+        stack[instruction.A] = stack[instruction.B][C];
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+instruction = instructions[IP];IP = IP + 1
+B = instruction.B;
+        C = instruction.C;
+        local stack, constants = stack, constants;
+
+        B = B > 255 and constants[B-256].data or stack[B];
+        C = C > 255 and constants[C-256].data or stack[C];
+
+        stack[instruction.A] = B - C;
+instruction = instructions[IP];IP = IP + 1
+stack[instruction.A] = constants[instruction.Bx].data;
+instruction = instructions[IP];IP = IP + 1
+local B = instruction.B
+        local result = stack[B]
+        for i = B+1, instruction.C do
+            result = result .. stack[i]
+        end
+        stack[instruction.A] = result
+instruction = instructions[IP];IP = IP + 1
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
         local args, results;
         local limit, loop
 
@@ -591,9 +1563,9 @@ local A = instruction.A;
         end
 instruction = instructions[IP];IP = IP + 1
 --TODO: CLOSE
-        local A = instruction.A;
-        local B = instruction.B;
-        local stack = stack;
+        A = instruction.A;
+        B = instruction.B;
+       
         local limit;
         local loop, output;
 
@@ -614,10 +1586,6 @@ instruction = instructions[IP];IP = IP + 1
         end
         return true, output;
 	end
-
-	local debugging = {
-		
-	};
 
 	local function func(...)
 		local local_stack = {};
@@ -651,26 +1619,26 @@ instruction = instructions[IP];IP = IP + 1
 			end
 			return;
 		else
-			--TODO error converting
+			--[[TODO error converting
 			local name = cache.name;
-			local line = cache.debug.lines[IP];
+			local line = cache.debug.lines[IP];]]
 			local err  = b:gsub("(.-:)", "");
-			local output = "";
+			--[[local output = "";
 			output = output .. (name and name .. ":" or "");
 			output = output .. (line and line .. ":" or "");
-			output = output .. b;
-			error(output, 0);
+			output = output .. b;]]
+			error(err, 0);
 
 		end
 	end
 
-	return debugging, func;
+	return func;
 end
 
 local load_bytecode = function(bytecode)
 	local cache = decode_bytecode(bytecode);
-	local _, func = wrap(cache);
-	return func;
+	return wrap(cache);
+	--return func;
 end;
 
-load_bytecode("\0\18\0\0\0\0\2\0\1\2\1\0\1\2\1\0\1\0\0\0\2\2\0\2\0\1\2\3\2\2\4\3\2\2\2\1\2\0\0\1\0\1\0\2\0\1\2\5\0\1\2\1\0\2\0\1\1\0\0\1\1\1\1\0\1\1\0\6\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\3\0\0\0\120\100\0\4\11\0\0\0\108\111\97\100\115\116\114\105\110\103\0\4\5\0\0\0\69\82\82\58\0\4\6\0\0\0\112\99\97\108\108\0\4\3\0\0\0\58\41\0\1\0\0\0\0\4\0\0\0\68\0\2\0\98\1\2\1\8\0\1\2\1\21\0\1\1\0\2\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\3\0\0\0\120\100\0\0\0\0\0")()
+load_bytecode("\0\101\0\0\0\0\2\0\1\2\1\0\1\2\1\0\2\2\1\2\0\2\2\3\3\2\4\4\1\0\0\3\1\2\2\2\1\2\3\1\1\2\1\1\2\0\2\2\5\1\1\2\1\1\2\6\1\1\1\263\1\1\1\2\2\1\1\0\3\2\8\4\1\0\0\5\2\8\3\3\2\0\0\0\7\2\0\7\1\1\1\3\3\-3\0\0\0\3\2\0\4\2\9\5\2\6\5\1\5\263\5\1\1\2\5\1\5\1\6\2\10\5\1\5\6\3\1\3\1\3\2\0\4\2\11\3\1\2\1\3\2\6\3\1\3\263\3\1\1\2\1\1\3\0\3\1\0\0\4\2\8\5\1\0\0\6\2\8\4\3\9\0\0\0\8\2\4\9\1\7\0\8\1\2\2\9\2\12\10\2\4\11\1\7\0\10\1\2\2\9\1\9\10\3\1\8\9\4\3\-10\0\0\0\4\2\0\5\2\9\6\2\6\6\1\6\263\6\1\1\2\6\1\6\1\7\2\10\6\1\6\7\4\1\3\1\4\2\0\5\2\13\4\1\2\1\4\2\6\4\1\4\263\4\1\1\2\1\1\4\0\4\2\8\5\1\0\0\6\2\8\4\3\5\0\0\0\8\2\4\9\1\7\0\8\1\2\2\8\1\3\8\3\1\264\8\4\3\-6\0\0\0\4\2\0\5\2\9\6\2\6\6\1\6\263\6\1\1\2\6\1\6\1\7\2\10\6\1\6\7\4\1\3\1\4\2\0\5\2\14\6\2\6\6\1\6\263\6\1\1\2\6\1\6\2\7\2\10\6\1\6\7\4\1\3\1\0\1\1\0\15\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\32\0\0\0\73\114\111\110\66\114\101\119\32\50\58\116\109\58\32\66\101\110\99\104\109\97\114\107\45\121\32\77\101\109\101\0\3\0\0\0\0\0\106\248\64\4\13\0\0\0\73\116\101\114\97\116\105\111\110\115\58\32\0\4\9\0\0\0\116\111\115\116\114\105\110\103\0\4\17\0\0\0\67\76\79\83\85\82\69\32\116\101\115\116\105\110\103\46\0\4\3\0\0\0\111\115\0\4\6\0\0\0\99\108\111\99\107\0\3\0\0\0\0\0\0\240\63\4\6\0\0\0\84\105\109\101\58\0\4\2\0\0\0\115\0\4\18\0\0\0\83\69\84\84\65\66\76\69\32\116\101\115\116\105\110\103\46\0\4\12\0\0\0\69\80\73\67\32\71\65\77\69\82\32\0\4\18\0\0\0\71\69\84\84\65\66\76\69\32\116\101\115\116\105\110\103\46\0\4\12\0\0\0\84\111\116\97\108\32\84\105\109\101\58\0\1\0\0\0\0\7\0\0\0\99\0\1\0\0\39\0\1\0\0\59\0\3\3\0\0\0\45\0\2\0\25\1\2\1\32\0\1\2\1\85\0\1\1\0\2\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\11\0\0\0\72\101\121\32\103\97\109\101\114\46\0\0\0\0\0")()

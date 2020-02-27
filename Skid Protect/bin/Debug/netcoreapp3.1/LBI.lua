@@ -180,11 +180,6 @@ local function create_wrapper(cache, upvalues)
 			end
 		end
 	end
-
-	local debugging = {
-		
-	};
-
 	local function func(...)
 		local local_stack = {};
 		local ghost_stack = {};
@@ -218,20 +213,20 @@ local function create_wrapper(cache, upvalues)
 			end
 			return;
 		else
-			--TODO error converting
+			--[[TODO error converting
 			local name = cache.name;
-			local line = cache.debug.lines[IP];
+			local line = cache.debug.lines[IP];]]
 			local err  = b:gsub("(.-:)", "");
-			local output = "";
+			--[[local output = "";
 			output = output .. (name and name .. ":" or "");
 			output = output .. (line and line .. ":" or "");
-			output = output .. b;
-			error(output, 0);
+			output = output .. b;]]
+			error(err, 0);
 
 		end
 	end
 
-	return debugging, func;
+	return func;
 end
 
 local function wrap(cache, upvalues)
@@ -247,13 +242,9 @@ local function wrap(cache, upvalues)
 
 	local function loop()
 		local instructions = instructions
-		local instruction, a, b
+		local instruction, a, b,A,B,C
 		--%%OPCODE_FUNCTIONS_HERE%%--
 	end
-
-	local debugging = {
-		
-	};
 
 	local function func(...)
 		local local_stack = {};
@@ -287,26 +278,26 @@ local function wrap(cache, upvalues)
 			end
 			return;
 		else
-			--TODO error converting
+			--[[TODO error converting
 			local name = cache.name;
-			local line = cache.debug.lines[IP];
+			local line = cache.debug.lines[IP];]]
 			local err  = b:gsub("(.-:)", "");
-			local output = "";
+			--[[local output = "";
 			output = output .. (name and name .. ":" or "");
 			output = output .. (line and line .. ":" or "");
-			output = output .. b;
-			error(output, 0);
+			output = output .. b;]]
+			error(err, 0);
 
 		end
 	end
 
-	return debugging, func;
+	return func;
 end
 
 local load_bytecode = function(bytecode)
 	local cache = decode_bytecode(bytecode);
-	local _, func = wrap(cache);
-	return func;
+	return wrap(cache);
+	--return func;
 end;
 
 load_bytecode("%%Bytecode%%")()

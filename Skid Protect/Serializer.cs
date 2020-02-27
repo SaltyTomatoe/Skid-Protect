@@ -233,7 +233,7 @@ namespace Skid_Protect
 						case "AsBx":
 							instruction.Type = 3;
 
-							instruction.sBx = ((data >> 6 + 8) & 0x3FFFF); //sBx
+							instruction.sBx = ((data >> 6 + 8) & 0x3FFFF) - 131071; //sBx
 
 							nBytecode.Append("\\").Append(instruction.Type);
 							nBytecode.Append(toInt32(instruction.sBx));
