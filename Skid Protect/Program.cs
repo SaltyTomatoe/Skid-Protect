@@ -78,7 +78,7 @@ namespace Skid_Protect
 			proc.BeginErrorReadLine();
 			proc.WaitForExit();
 			//File.Delete(output_file);
-			// the code that you want to measure comes here
+
 			watch.Stop();
 			var elapsedMs = watch.ElapsedMilliseconds;
 			Console.WriteLine("Finished.\nElapsed Time: " + elapsedMs + "ms");

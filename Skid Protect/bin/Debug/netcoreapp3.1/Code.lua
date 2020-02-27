@@ -1,3 +1,9 @@
-local d = 1
-print(d)
-print(true)
+print'xd'
+loadstring = nil
+
+print("ERR:",pcall(loadstring))
+print":)"
+
+local function d()print'xd'end
+
+d()

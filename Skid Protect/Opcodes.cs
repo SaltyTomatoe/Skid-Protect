@@ -19,14 +19,12 @@ namespace Skid_Protect
             stack[i] = nil
         end" },
             { 4, @"stack[instruction.A] = upvalues[instruction.B]" },
-            {5, @"local key = constants[instruction.Bx].data;
-        stack[instruction.A] = environment[key];" },
+            {5, @"stack[instruction.A] = environment[constants[instruction.Bx].data];" },
             {6, @"local C = instruction.C
         local stack = stack
         C = C > 255 and constants[C-256].data or stack[C]
         stack[instruction.A] = stack[instruction.B][C];" },
-            {7,@"local key = constants[instruction.Bx].data;
-        environment[key] = stack[instruction.A];" },
+            {7,@"environment[constants[instruction.Bx].data] = stack[instruction.A];" },
             {8,@"upvalues[instruction.B] = stack[instruction.A]" },
             {9,@" local B = instruction.B;
         local C = instruction.C;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Skid_Protect
@@ -39,6 +40,36 @@ namespace Skid_Protect
 		static public StringBuilder opcode_funcs = new StringBuilder();
 		static private Dictionary<int, Opcode_Information> Opcodes_Used_in_Closure = new Dictionary<int, Opcode_Information>();
 
+		static Random random = new Random();
+
+		public static List<int> GenerateRandom(int count, int min, int max)
+		{
+
+			if (max <= min || count < 0 ||
+					(count > max - min && max - min > 0))
+			{
+				throw new ArgumentOutOfRangeException("Range " + min + " to " + max +
+						" (" + ((Int64)max - (Int64)min) + " values), or count " + count + " is illegal");
+			}
+
+			HashSet<int> candidates = new HashSet<int>();
+			for (int top = max - count; top < max; top++)
+			{
+				if (!candidates.Add(random.Next(min, top + 1)))
+				{
+					candidates.Add(top);
+				}
+			}
+			List<int> result = candidates.ToList();
+			for (int i = result.Count - 1; i > 0; i--)
+			{
+				int k = random.Next(i + 1);
+				int tmp = result[k];
+				result[k] = result[i];
+				result[i] = tmp;
+			}
+			return result;
+		}
 		int bitExtracted(int number, int k, int p)
 		{
 			return (((1 << k) - 1) & (number >> (p - 1)));
@@ -55,6 +86,7 @@ namespace Skid_Protect
 		static private StringBuilder Serialize(byte[] bytecode)
 		{
 			StringBuilder nBytecode = new StringBuilder();
+			List<int> Available_Opcodes = GenerateRandom(38, 0, 100);
 			int index = 0;
 			int get_int8()
 			{
@@ -168,13 +200,15 @@ namespace Skid_Protect
 					}
 					else
 					{
-						nBytecode.Append("\\").Append(opcode);
 						instruction.OldName = opcode;
-						instruction.NewName = opcode;
+						var newName = Available_Opcodes.First<int>();
+						instruction.NewName = newName;
+						Available_Opcodes.Remove(newName);
 						if (Opcodes_Used_in_Closure.ContainsKey(opcode) == false)
 						{
 							Opcodes_Used_in_Closure.Add(opcode, instruction);
 						}
+						nBytecode.Append("\\").Append(newName);
 					}
 
 					instruction.A = (data >> 6) & 0xFF;
@@ -298,9 +332,9 @@ namespace Skid_Protect
 			StringBuilder bytecode = Serialize(a1);
 			StringBuilder opcodes_Closure = new StringBuilder();
 			//format the used ops in closure
-			foreach (var item in Opcodes_Used_in_Closure)
+			foreach (var item in Opcodes_Used_in_Closure.Values)
 			{
-				opcodes_Closure.Append("\n[" + item.Key + "] = ").Append(Opcodes.ops_table[item.Key]);
+				opcodes_Closure.Append("\n[" + item.NewName + "] = ").Append(Opcodes.ops_table[item.OldName]);
 			}
 			//end
 			string lbi = format_lbi(a2, bytecode.ToString(), opcode_funcs.ToString(),opcodes_Closure.ToString());
