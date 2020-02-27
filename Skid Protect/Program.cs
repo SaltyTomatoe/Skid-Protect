@@ -73,7 +73,6 @@ namespace Skid_Protect
 
 			proc.OutputDataReceived += (sender, args) => { err += args.Data;};
 			proc.ErrorDataReceived += (sender, args) => { err += args.Data;};
-			Console.WriteLine(err);
 			proc.Start();
 			proc.BeginOutputReadLine();
 			proc.BeginErrorReadLine();

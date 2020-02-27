@@ -303,7 +303,7 @@ local function wrap(cache, upvalues)
 	return debugging, func;
 end
 
-load_bytecode = function(bytecode)
+local load_bytecode = function(bytecode)
 	local cache = decode_bytecode(bytecode);
 	local _, func = wrap(cache);
 	return func;

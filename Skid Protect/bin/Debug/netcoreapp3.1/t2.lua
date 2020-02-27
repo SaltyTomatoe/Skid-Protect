@@ -426,7 +426,7 @@ instruction = instructions[IP];IP = IP + 1
 	return debugging, func;
 end
 
-load_bytecode = function(bytecode)
+local load_bytecode = function(bytecode)
 	local cache = decode_bytecode(bytecode);
 	local _, func = wrap(cache);
 	return func;

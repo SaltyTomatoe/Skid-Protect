@@ -132,7 +132,6 @@ namespace Skid_Protect
 					str.Append("\\").Append(bytecode[index + i]);
 				}
 				index = index + len;
-				Console.WriteLine(str);
 				return str;
 			}
 
@@ -203,7 +202,7 @@ namespace Skid_Protect
 							instruction.sBx = ((data >> 6 + 8) & 0x3FFFF); //sBx
 
 							nBytecode.Append("\\").Append(instruction.Type);
-							nBytecode.Append("\\").Append(toInt32(instruction.sBx));
+							nBytecode.Append(toInt32(instruction.sBx));
 							break;
 					}
 				}
