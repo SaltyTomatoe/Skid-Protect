@@ -1,5 +1,43 @@
 --- Extract bits from an integer
 --@author: Stravant
+
+local BitWise = {}
+
+local BitShiftLeft = function(integer, count)
+	return integer * (2 ^ count);
+end
+
+local ShiftRight = function  (integer, count)
+	return math.floor(integer / (2 ^ count))
+end
+
+local GetBits = function  (integer, index, count)
+	local bits = ShiftRight(integer, index)
+	return bits % (2 ^ count)
+end
+
+local GetBitCount= function (integer)
+	local count = 1
+	while integer > 1 do
+		integer = ShiftRight(integer, 1)
+		count = count + 1
+	end
+	return count
+end
+
+local function xor(integerA, integerB)
+	local mb = math.max(GetBitCount(integerA), GetBitCount(integerB))
+	local arr = {}
+	for n = 0, mb-1 do
+		arr[mb - n] = (GetBits(integerA, n, 1) ~= GetBits(integerB, n, 1)) and 1 or 0
+	end
+	return tonumber(table.concat(arr, ""), 2)
+end
+
+local function fix(int,int2)
+	return string.char(xor(int,int2))
+end
+
 local function get_bits(input, n, n2)
 	if n2 then
 		local total = 0
@@ -93,19 +131,18 @@ local function decode_bytecode(bytecode)
 				if(is_proto == true)then
 					instruction.opcode = (get_int8())
 				end
-				instruction.A = get_int8();
 				local type   = get_int8()
 				instruction.type   = type;
-
+				local data = get_int32();
+				instruction.A = get_bits(data,1,7);
 				if type == 1 then
-					instruction.B = get_int8()
-					instruction.C = get_int8()
+					instruction.B = get_bits(data,8,16);
+					instruction.C = get_bits(data,17,25);
 				elseif type == 2 then
-					instruction.Bx = get_int8()
+					instruction.Bx = get_bits(data,8,26);
 				elseif type == 3 then
-					instruction.sBx = get_int32();
+					instruction.sBx = get_bits(data,8,26);
 				end
-
 				instructions[i] = instruction;
 			end
 		end
@@ -216,7 +253,7 @@ local function create_wrapper(cache, upvalues)
 			--[[TODO error converting
 			local name = cache.name;
 			local line = cache.debug.lines[IP];]]
-			local err  = b:gsub("(.-:)", "");
+			local err  = a:gsub("(.-:)", "");
 			--[[local output = "";
 			output = output .. (name and name .. ":" or "");
 			output = output .. (line and line .. ":" or "");
@@ -281,7 +318,7 @@ local function wrap(cache, upvalues)
 			--[[TODO error converting
 			local name = cache.name;
 			local line = cache.debug.lines[IP];]]
-			local err  = b:gsub("(.-:)", "");
+			local err  = a:gsub("(.-:)", "");
 			--[[local output = "";
 			output = output .. (name and name .. ":" or "");
 			output = output .. (line and line .. ":" or "");

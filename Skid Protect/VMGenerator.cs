@@ -28,7 +28,7 @@ namespace Skid_Protect
             {8,@"upvalues[instruction.B] = stack[instruction.A]" },
             {9,@" B = instruction.B;
         C = instruction.C;
-        local stack, constants = stack, constants;
+        ;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
@@ -36,7 +36,7 @@ namespace Skid_Protect
         stack[instruction.A][B] = C" },
             {10,@"stack[instruction.A] = {}" },
             {11,@"A = instruction.A
-        local B = instruction.B
+        B = instruction.B
         C = instruction.C
         
 
@@ -47,7 +47,7 @@ namespace Skid_Protect
         stack[A]   = B[C]" },
             {12,@"B = instruction.B;
         C = instruction.C;
-        local stack, constants = stack, constants;
+        ;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
@@ -55,7 +55,7 @@ namespace Skid_Protect
         stack[instruction.A] = B+C;" },
             {13,@"B = instruction.B;
         C = instruction.C;
-        local stack, constants = stack, constants;
+        ;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
@@ -63,7 +63,7 @@ namespace Skid_Protect
         stack[instruction.A] = B - C;" },
             {14,@"B = instruction.B;
         C = instruction.C;
-        local stack, constants = stack, constants;
+        ;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
@@ -71,7 +71,7 @@ namespace Skid_Protect
         stack[instruction.A] = B * C;" },
             {15,@"B = instruction.B;
         C = instruction.C;
-        local stack, constants = stack, constants;
+        ;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
@@ -79,7 +79,7 @@ namespace Skid_Protect
         stack[instruction.A] = B / C;" },
             {16,@"B = instruction.B;
         C = instruction.C;
-        local stack, constants = stack, constants;
+        ;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
@@ -87,7 +87,7 @@ namespace Skid_Protect
         stack[instruction.A] = B % C;" },
             {17,@"B = instruction.B;
         C = instruction.C;
-        local stack, constants = stack, constants;
+        ;
 
         B = B > 255 and constants[B-256].data or stack[B];
         C = C > 255 and constants[C-256].data or stack[C];
@@ -96,7 +96,7 @@ namespace Skid_Protect
             {18,@"stack[instruction.A] = -stack[instruction.B]" },
             {19,@"stack[instruction.A] = not stack[instruction.B]" },
             {20,@"stack[instruction.A] = #stack[instruction.B]" },
-            {21,@"local B = instruction.B
+            {21,@"B = instruction.B
         local result = stack[B]
         for i = B+1, instruction.C do
             result = result .. stack[i]
@@ -104,9 +104,9 @@ namespace Skid_Protect
         stack[instruction.A] = result" },
             {22,@"IP = IP + instruction.sBx" },
             {23,@"A = instruction.A
-        local B = instruction.B
+        B = instruction.B
         C = instruction.C
-        local stack, constants = stack, constants
+        
 
         A = A ~= 0
         if (B > 255) then B = constants[B-256].data else B = stack[B] end
@@ -115,9 +115,9 @@ namespace Skid_Protect
             IP = IP + 1
         end" },
             {24,@"A = instruction.A
-        local B = instruction.B
+        B = instruction.B
         C = instruction.C
-        local stack, constants = stack, constants
+        
 
         A = A ~= 0
         B = B > 255 and constants[B-256].data or stack[B]
@@ -126,9 +126,9 @@ namespace Skid_Protect
             IP = IP + 1
         end" },
             {25,@"A = instruction.A
-        local B = instruction.B
+        B = instruction.B
         C = instruction.C
-        local stack, constants = stack, constants
+        
 
         A = A ~= 0
         B = B > 255 and constants[B-256].data or stack[B]
@@ -151,7 +151,7 @@ namespace Skid_Protect
             {28,@"A = instruction.A;
         B = instruction.B;
         C = instruction.C;
-        ;
+       
         local args, results;
         local limit, loop
 
@@ -192,7 +192,7 @@ namespace Skid_Protect
             {29,@"A = instruction.A;
         B = instruction.B;
         C = instruction.C;
-        ;
+       
         local args, results;
         local top, limit, loop = top
 
@@ -219,7 +219,7 @@ namespace Skid_Protect
             {30,@"--TODO: CLOSE
         A = instruction.A;
         B = instruction.B;
-        ;
+       
         local limit;
         local loop, output;
 
@@ -263,7 +263,7 @@ namespace Skid_Protect
         stack[A] = stack[A] - stack[A+2]
         IP = IP + instruction.sBx" },
             {33,@"A = instruction.A
-        local B = instruction.B
+        B = instruction.B
         C = instruction.C
         
 
@@ -279,7 +279,7 @@ namespace Skid_Protect
             IP = IP + 1
         end" },
             {34,@"A = instruction.A
-        local B = instruction.B
+        B = instruction.B
         C = instruction.C
         
 
@@ -328,7 +328,7 @@ namespace Skid_Protect
         local _, func = create_wrapper(proto, new_upvals)
         stack[instruction.A] = func" },
             {37,@"A = instruction.A
-        local B = instruction.B
+        B = instruction.B
         local stack, vararg = stack, vararg
 
         for i = A, A + (B > 0 and B - 1 or vararg_size) do

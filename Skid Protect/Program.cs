@@ -54,6 +54,7 @@ namespace Skid_Protect
 
 			string output_file = Path.Combine(directory, "t2.lua");
 			string minified_finish = Path.Combine(directory, "Output.lua");
+			string luajit = Path.Combine(directory, "Luajit/luajit.exe");
 			File.WriteAllText(output_file, Compiled_VM);
 
 			Console.WriteLine("\nMinifying");
@@ -61,7 +62,7 @@ namespace Skid_Protect
 			{
 				StartInfo =
 						   {
-							   FileName  = $"{OS}lua",
+							   FileName  = luajit,
 							   Arguments = "Lua/Minifier/luasrcdiet.lua --maximum --opt-entropy --opt-emptylines --opt-eols --opt-numbers --opt-whitespace --opt-locals --noopt-strings  -o \"" + minified_finish + "\" \"" + output_file + "\"",
 							   UseShellExecute = false,
 							   RedirectStandardError = true,

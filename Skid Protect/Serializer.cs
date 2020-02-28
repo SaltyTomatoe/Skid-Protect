@@ -74,6 +74,22 @@ namespace Skid_Protect
 		{
 			return (((1 << k) - 1) & (number >> (p - 1)));
 		}
+
+		public static string ByteConvert(int num)
+		{
+			int[] p = new int[8];
+			string pa = "";
+			for (int ii = 0; ii <= 7; ii = ii + 1)
+			{
+				p[7 - ii] = num % 2;
+				num = num / 2;
+			}
+			for (int ii = 0; ii <= 7; ii = ii + 1)
+			{
+				pa += p[ii].ToString();
+			}
+			return pa;
+		}
 		//private int get_int;
 		//private int get_size_t;
 
@@ -112,11 +128,11 @@ namespace Skid_Protect
 				a = b = c = d = 0;
 				while (true)
 				{
-					if(num > 256)
+					if(num >= 256)
 					{
-						if (num > 65536)
+						if (num >= 65536)
 						{
-							if (num> 16777216)
+							if (num >= 16777216)
 							{
 								num -= 16777216;
 								d++;
@@ -212,7 +228,7 @@ namespace Skid_Protect
 					}
 
 					instruction.A = (data >> 6) & 0xFF;
-					nBytecode.Append("\\").Append(instruction.A);
+					StringBuilder bin = new StringBuilder();
 					switch (opcode_type)
 					{
 						case "ABC":
@@ -221,25 +237,36 @@ namespace Skid_Protect
 							instruction.C = (data >> 6 + 8) & 0x1FF; // Inst C
 
 							nBytecode.Append("\\").Append(instruction.Type);
-							nBytecode.Append("\\").Append(instruction.B);
-							nBytecode.Append("\\").Append(instruction.C);
+
+							bin.Append(Convert.ToString(instruction.C, 2).PadLeft(9, '0'));
+							bin.Append(Convert.ToString(instruction.B, 2).PadLeft(9, '0'));
+							bin.Append(Convert.ToString(instruction.A, 2).PadLeft(7, '0'));
+							nBytecode.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
 							break;
 						case "ABx":
 							instruction.Type = 2;
 							instruction.Bx = (data >> 6 + 8) & 0x3FFFF; //Inst Bx
 							nBytecode.Append("\\").Append(instruction.Type);
-							nBytecode.Append("\\").Append(instruction.Bx);
+
+							bin.Append(Convert.ToString(instruction.Bx, 2).PadLeft(18, '0'));
+							bin.Append(Convert.ToString(instruction.A, 2).PadLeft(7, '0'));
+							nBytecode.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
 							break;
 						case "AsBx":
 							instruction.Type = 3;
 
 							instruction.sBx = ((data >> 6 + 8) & 0x3FFFF) - 131071; //sBx
-
 							nBytecode.Append("\\").Append(instruction.Type);
-							nBytecode.Append(toInt32(instruction.sBx));
+							
+							bin.Append(Convert.ToString(instruction.Bx, 2).PadLeft(18, '0'));
+							bin.Append(Convert.ToString(instruction.A, 2).PadLeft(7, '0'));
+							nBytecode.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
 							break;
 					}
+					//Console.WriteLine(nBytecode.ToString() + " " + opcode_type);
 				}
+
+				//Console.WriteLine(nBytecode.ToString());
 
 				//Constants next!
 				num = get_int32();
