@@ -34,7 +34,7 @@ namespace Skid_Protect
 			proc.BeginOutputReadLine();
 			proc.BeginErrorReadLine();
 			proc.WaitForExit();
-
+			Console.WriteLine(err);
 			byte[] to_return = File.ReadAllBytes(l);
 			File.Delete(l);
 

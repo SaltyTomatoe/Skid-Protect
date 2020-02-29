@@ -325,7 +325,7 @@ namespace Skid_Protect
             IP = IP + 1
         end
 
-        local _, func = create_wrapper(proto, new_upvals)
+        local func = create_wrapper(proto, new_upvals)
         stack[instruction.A] = func" },
             {37,@"A = instruction.A
         B = instruction.B
@@ -740,7 +740,7 @@ namespace Skid_Protect
 				IP = IP + 1
 			end
 
-			local _, func = create_wrapper(proto, new_upvals)
+			local func = create_wrapper(proto, new_upvals)
 			stack[instruction.A] = func
 		end," },
             {37,@"function(instruction)	-- VARARG
