@@ -24,7 +24,6 @@ local GetBitCount= function (integer)
 	end
 	return count
 end
-
 local function xor(integerA, integerB)
 	local mb = math.max(GetBitCount(integerA), GetBitCount(integerB))
 	local arr = {}
@@ -37,7 +36,7 @@ end
 local function fix(int,int2)
 	return string.char(xor(int,int2))
 end
-
+--//Lmao so like, this is kidna worthless
 local function get_bits(input, n, n2)
 	if n2 then
 		local total = 0
@@ -103,15 +102,15 @@ local function decode_bytecode(bytecode)
 		local instructions = {};
 		local constants    = {};
 		local prototypes   = {};
-		local debug = {
+		--[[local debug = {
 			lines = {};
-		};
+		};]]
 
 		chunk = {
 			instructions = instructions;
 			constants    = constants;
 			prototypes   = prototypes;
-			debug = debug;
+			--debug = debug;
 		};
 
 		local num;

@@ -322,6 +322,7 @@ namespace Skid_Protect
 			lbi = lbi.Replace("%%Bytecode%%", bytecode);
 			lbi = lbi.Replace("--%%OPCODE_FUNCTIONS_HERE%%--", opcodes);
 			lbi = lbi.Replace("--%%CLOSURE_FUNCTIONS_HERE%%--", opcodes_Closure);
+			lbi = lbi.Replace("--//Lmao so like, this is kidna worthless", "local lmao_so_this_kinda_worthless = " + StringLibrary.Huge_fucking_table_xored("Lmao so like, this is kidna worthless"));
 			return lbi;
 		}
 		static public string Serialize(byte[] a1, string a2)

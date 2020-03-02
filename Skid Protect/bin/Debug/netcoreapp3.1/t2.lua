@@ -24,7 +24,6 @@ local GetBitCount= function (integer)
 	end
 	return count
 end
-
 local function xor(integerA, integerB)
 	local mb = math.max(GetBitCount(integerA), GetBitCount(integerB))
 	local arr = {}
@@ -37,7 +36,7 @@ end
 local function fix(int,int2)
 	return string.char(xor(int,int2))
 end
-
+local lmao_so_this_kinda_worthless = {fix(485,425),fix(987,950),fix(715,682),fix(572,595),fix(946,914),fix(669,750),fix(49,94),fix(143,175),fix(312,340),fix(462,423),fix(139,224),fix(571,606),fix(616,580),fix(749,717),fix(834,822),fix(296,320),fix(393,480),fix(760,651),fix(166,134),fix(233,128),fix(928,979),fix(653,685),fix(417,458),fix(236,133),fix(320,292),fix(59,85),fix(59,90),fix(204,236),fix(579,564),fix(977,958),fix(757,647),fix(801,853),fix(817,857),fix(1001,901),fix(663,754),fix(271,380),fix(716,703),}
 local function get_bits(input, n, n2)
 	if n2 then
 		local total = 0
@@ -103,15 +102,15 @@ local function decode_bytecode(bytecode)
 		local instructions = {};
 		local constants    = {};
 		local prototypes   = {};
-		local debug = {
+		--[[local debug = {
 			lines = {};
-		};
+		};]]
 
 		chunk = {
 			instructions = instructions;
 			constants    = constants;
 			prototypes   = prototypes;
-			debug = debug;
+			--debug = debug;
 		};
 
 		local num;
@@ -195,17 +194,17 @@ local function create_wrapper(cache, upvalues)
 	local vararg, vararg_size
 	local opcode_funcs = {
 	
-[30] = function(instruction)	-- LOADK
+[27] = function(instruction)	-- LOADK
 			stack[instruction.A] = constants[instruction.Bx];
 		end,
-[11] = function(instruction)	-- GETGLOBAL
+[55] = function(instruction)	-- GETGLOBAL
 			local key = constants[instruction.Bx];
 			stack[instruction.A] = environment[key];
 		end,
-[8] = function(instruction)	-- MOVE
+[43] = function(instruction)	-- MOVE
 			stack[instruction.A] = stack[instruction.B];
 		end,
-[73] = function(instruction)	-- CALL
+[44] = function(instruction)	-- CALL
 			local A = instruction.A;
 			local B = instruction.B;
 			local C = instruction.C;
@@ -248,7 +247,7 @@ local function create_wrapper(cache, upvalues)
 				end
 			end
 		end,
-[81] = function(instruction)	-- CONCAT
+[59] = function(instruction)	-- CONCAT
 			local B = instruction.B
 			local result = stack[B]
 			for i = B+1, instruction.C do
@@ -256,20 +255,20 @@ local function create_wrapper(cache, upvalues)
 			end
 			stack[instruction.A] = result
 		end,
-[79] = function(instruction)	-- GETTABLE
+[98] = function(instruction)	-- GETTABLE
 			local C = instruction.C
 			local stack = stack
 			C = C > 255 and constants[C-256] or stack[C]
 			stack[instruction.A] = stack[instruction.B][C];
 		end,
-[94] = function(instruction)	-- FORPREP
+[73] = function(instruction)	-- FORPREP
 			local A = instruction.A
 			local stack = stack
 
 			stack[A] = stack[A] - stack[A+2]
 			IP = IP + instruction.sBx
 		end,
-[67] = function(instruction)	-- CLOSURE
+[38] = function(instruction)	-- CLOSURE
 			local proto = prototypes[instruction.Bx]
 			local instructions = instructions
 			local stack = stack
@@ -300,7 +299,7 @@ local function create_wrapper(cache, upvalues)
 			local func = create_wrapper(proto, new_upvals)
 			stack[instruction.A] = func
 		end,
-[28] = function(instruction)	-- FORLOOP
+[36] = function(instruction)	-- FORLOOP
 			local A = instruction.A
 			local stack = stack
 
@@ -320,7 +319,7 @@ local function create_wrapper(cache, upvalues)
 				end
 			end
 		end,
-[20] = function(instruction)	-- SUB
+[0] = function(instruction)	-- SUB
 			local B = instruction.B;
 			local C = instruction.C;
 			local stack, constants = stack, constants;
@@ -330,10 +329,10 @@ local function create_wrapper(cache, upvalues)
 
 			stack[instruction.A] = B - C;
 		end,
-[23] = function (instruction)	-- NEWTABLE
+[89] = function (instruction)	-- NEWTABLE
 			stack[instruction.A] = {}
 		end,
-[72] = function (instruction)	-- SETTABLE
+[66] = function (instruction)	-- SETTABLE
 			local B = instruction.B;
 			local C = instruction.C;
 			local stack, constants = stack, constants;
@@ -343,7 +342,7 @@ local function create_wrapper(cache, upvalues)
 
 			stack[instruction.A][B] = C
 		end,
-[9] = function(instruction) -- RETURN
+[72] = function(instruction) -- RETURN
 			--TODO: CLOSE
 			local A = instruction.A;
 			local B = instruction.B;
@@ -368,19 +367,19 @@ local function create_wrapper(cache, upvalues)
 			end
 			return true, output;
 		end,
-[4] = function(instruction)	-- LOADBOOL
+[81] = function(instruction)	-- LOADBOOL
 			stack[instruction.A] = instruction.B ~= 0
 			if instruction.C ~= 0 then
 				IP = IP + 1
 			end
 		end,
-[55] = function(instruction)	-- TEST
+[35] = function(instruction)	-- TEST
 			local A = stack[instruction.A];
 			if (not not A) == (instruction.C == 0) then
 				IP = IP + 1
 			end
 		end,
-[1] = function(instruction)	-- JUMP
+[51] = function(instruction)	-- JUMP
 			IP = IP + instruction.sBx
 		end,
 	}
@@ -446,4 +445,4 @@ local function create_wrapper(cache, upvalues)
 	return func;
 end
 
-create_wrapper(decode_bytecode("\0\98\0\0\0\30\2\0\0\0\0\11\2\129\0\0\0\30\2\2\1\0\0\11\2\131\1\0\0\8\1\4\0\0\0\73\1\3\1\2\0\81\1\2\1\3\0\73\1\1\1\1\0\11\2\129\0\0\0\30\2\2\2\0\0\73\1\1\1\1\0\11\2\129\2\0\0\79\1\129\0\6\1\73\1\129\0\2\0\8\1\130\0\0\0\30\2\131\3\0\0\8\1\4\0\0\0\30\2\133\3\0\0\94\3\131\0\0\1\67\2\7\0\0\0\73\1\135\0\1\0\28\3\3\254\255\0\11\2\131\0\0\0\30\2\4\4\0\0\11\2\133\2\0\0\79\1\133\2\6\1\73\1\133\0\2\0\20\1\133\2\1\0\30\2\134\4\0\0\81\1\133\2\6\0\73\1\131\1\1\0\11\2\131\0\0\0\30\2\4\5\0\0\73\1\3\1\1\0\11\2\131\2\0\0\79\1\131\1\6\1\73\1\131\0\2\0\8\1\129\1\0\0\23\1\3\0\0\0\30\2\132\3\0\0\8\1\5\0\0\0\30\2\134\3\0\0\94\3\4\4\0\1\11\2\136\1\0\0\8\1\137\3\0\0\73\1\8\1\2\0\30\2\137\5\0\0\11\2\138\1\0\0\8\1\139\3\0\0\73\1\10\1\2\0\81\1\137\4\10\0\72\1\3\4\9\0\28\3\132\250\255\0\11\2\132\0\0\0\30\2\5\4\0\0\11\2\134\2\0\0\79\1\6\3\6\1\73\1\134\0\2\0\20\1\6\3\1\0\30\2\135\4\0\0\81\1\6\3\7\0\73\1\132\1\1\0\11\2\132\0\0\0\30\2\5\6\0\0\73\1\4\1\1\0\11\2\132\2\0\0\79\1\4\2\6\1\73\1\132\0\2\0\8\1\1\2\0\0\30\2\132\3\0\0\8\1\5\0\0\0\30\2\134\3\0\0\94\3\4\2\0\1\11\2\136\1\0\0\8\1\137\3\0\0\73\1\8\1\2\0\79\1\136\1\8\0\72\1\131\131\8\0\28\3\132\252\255\0\11\2\132\0\0\0\30\2\5\4\0\0\11\2\134\2\0\0\79\1\6\3\6\1\73\1\134\0\2\0\20\1\6\3\1\0\30\2\135\4\0\0\81\1\6\3\7\0\73\1\132\1\1\0\11\2\132\0\0\0\30\2\133\6\0\0\11\2\134\2\0\0\79\1\6\3\6\1\73\1\134\0\2\0\20\1\6\3\2\0\30\2\135\4\0\0\81\1\6\3\7\0\73\1\132\1\1\0\9\1\128\0\0\0\14\0\0\0\3\0\0\0\0\0\106\248\64\4\6\0\0\0\112\114\105\110\116\0\4\13\0\0\0\73\116\101\114\97\116\105\111\110\115\58\32\0\4\9\0\0\0\116\111\115\116\114\105\110\103\0\4\17\0\0\0\67\76\79\83\85\82\69\32\116\101\115\116\105\110\103\46\0\4\3\0\0\0\111\115\0\4\6\0\0\0\99\108\111\99\107\0\3\0\0\0\0\0\0\240\63\4\6\0\0\0\84\105\109\101\58\0\4\2\0\0\0\115\0\4\18\0\0\0\83\69\84\84\65\66\76\69\32\116\101\115\116\105\110\103\46\0\4\12\0\0\0\69\80\73\67\32\71\65\77\69\82\32\0\4\18\0\0\0\71\69\84\84\65\66\76\69\32\116\101\115\116\105\110\103\46\0\4\12\0\0\0\84\111\116\97\108\32\84\105\109\101\58\0\1\0\0\0\0\7\0\0\0\4\1\0\0\0\0\55\1\0\0\0\0\1\3\0\1\0\1\11\2\0\0\0\0\30\2\129\0\0\0\73\1\0\1\1\0\9\1\128\0\0\0\2\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\11\0\0\0\72\101\121\32\103\97\109\101\114\46\0\0\0\0\0"))()
+create_wrapper(decode_bytecode("\0\98\0\0\0\27\2\0\0\0\0\55\2\129\0\0\0\27\2\2\1\0\0\55\2\131\1\0\0\43\1\4\0\0\0\44\1\3\1\2\0\59\1\2\1\3\0\44\1\1\1\1\0\55\2\129\0\0\0\27\2\2\2\0\0\44\1\1\1\1\0\55\2\129\2\0\0\98\1\129\0\6\1\44\1\129\0\2\0\43\1\130\0\0\0\27\2\131\3\0\0\43\1\4\0\0\0\27\2\133\3\0\0\73\3\131\0\0\1\38\2\7\0\0\0\44\1\135\0\1\0\36\3\3\254\255\0\55\2\131\0\0\0\27\2\4\4\0\0\55\2\133\2\0\0\98\1\133\2\6\1\44\1\133\0\2\0\0\1\133\2\1\0\27\2\134\4\0\0\59\1\133\2\6\0\44\1\131\1\1\0\55\2\131\0\0\0\27\2\4\5\0\0\44\1\3\1\1\0\55\2\131\2\0\0\98\1\131\1\6\1\44\1\131\0\2\0\43\1\129\1\0\0\89\1\3\0\0\0\27\2\132\3\0\0\43\1\5\0\0\0\27\2\134\3\0\0\73\3\4\4\0\1\55\2\136\1\0\0\43\1\137\3\0\0\44\1\8\1\2\0\27\2\137\5\0\0\55\2\138\1\0\0\43\1\139\3\0\0\44\1\10\1\2\0\59\1\137\4\10\0\66\1\3\4\9\0\36\3\132\250\255\0\55\2\132\0\0\0\27\2\5\4\0\0\55\2\134\2\0\0\98\1\6\3\6\1\44\1\134\0\2\0\0\1\6\3\1\0\27\2\135\4\0\0\59\1\6\3\7\0\44\1\132\1\1\0\55\2\132\0\0\0\27\2\5\6\0\0\44\1\4\1\1\0\55\2\132\2\0\0\98\1\4\2\6\1\44\1\132\0\2\0\43\1\1\2\0\0\27\2\132\3\0\0\43\1\5\0\0\0\27\2\134\3\0\0\73\3\4\2\0\1\55\2\136\1\0\0\43\1\137\3\0\0\44\1\8\1\2\0\98\1\136\1\8\0\66\1\131\131\8\0\36\3\132\252\255\0\55\2\132\0\0\0\27\2\5\4\0\0\55\2\134\2\0\0\98\1\6\3\6\1\44\1\134\0\2\0\0\1\6\3\1\0\27\2\135\4\0\0\59\1\6\3\7\0\44\1\132\1\1\0\55\2\132\0\0\0\27\2\133\6\0\0\55\2\134\2\0\0\98\1\6\3\6\1\44\1\134\0\2\0\0\1\6\3\2\0\27\2\135\4\0\0\59\1\6\3\7\0\44\1\132\1\1\0\72\1\128\0\0\0\14\0\0\0\3\0\0\0\0\0\106\248\64\4\6\0\0\0\112\114\105\110\116\0\4\13\0\0\0\73\116\101\114\97\116\105\111\110\115\58\32\0\4\9\0\0\0\116\111\115\116\114\105\110\103\0\4\17\0\0\0\67\76\79\83\85\82\69\32\116\101\115\116\105\110\103\46\0\4\3\0\0\0\111\115\0\4\6\0\0\0\99\108\111\99\107\0\3\0\0\0\0\0\0\240\63\4\6\0\0\0\84\105\109\101\58\0\4\2\0\0\0\115\0\4\18\0\0\0\83\69\84\84\65\66\76\69\32\116\101\115\116\105\110\103\46\0\4\12\0\0\0\69\80\73\67\32\71\65\77\69\82\32\0\4\18\0\0\0\71\69\84\84\65\66\76\69\32\116\101\115\116\105\110\103\46\0\4\12\0\0\0\84\111\116\97\108\32\84\105\109\101\58\0\1\0\0\0\0\7\0\0\0\81\1\0\0\0\0\35\1\0\0\0\0\51\3\0\1\0\1\55\2\0\0\0\0\27\2\129\0\0\0\44\1\0\1\1\0\72\1\128\0\0\0\2\0\0\0\4\6\0\0\0\112\114\105\110\116\0\4\11\0\0\0\72\101\121\32\103\97\109\101\114\46\0\0\0\0\0"))()
