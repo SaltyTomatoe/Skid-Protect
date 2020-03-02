@@ -9,7 +9,7 @@ namespace Skid_Protect
         static public Dictionary<int, string> ops = new Dictionary<int, string>()
         {
             { 0 , "stack[instruction.A] = stack[instruction.B];" },
-            { 1 , "stack[instruction.A] = constants[instruction.Bx].data;" },
+            { 1 , "stack[instruction.A] = constants[instruction.Bx];" },
             { 2 , @"stack[instruction.A] = instruction.B ~= 0
         if instruction.C ~= 0 then
             IP = IP + 1
@@ -19,19 +19,19 @@ namespace Skid_Protect
             stack[i] = nil
         end" },
             { 4, @"stack[instruction.A] = upvalues[instruction.B]" },
-            {5, @"stack[instruction.A] = environment[constants[instruction.Bx].data];" },
+            {5, @"stack[instruction.A] = environment[constants[instruction.Bx]];" },
             {6, @"C = instruction.C
         
-        C = C > 255 and constants[C-256].data or stack[C]
+        C = C > 255 and constants[C-256] or stack[C]
         stack[instruction.A] = stack[instruction.B][C];" },
-            {7,@"environment[constants[instruction.Bx].data] = stack[instruction.A];" },
+            {7,@"environment[constants[instruction.Bx]] = stack[instruction.A];" },
             {8,@"upvalues[instruction.B] = stack[instruction.A]" },
             {9,@" B = instruction.B;
         C = instruction.C;
        
 
-        B = B > 255 and constants[B-256].data or stack[B];
-        C = C > 255 and constants[C-256].data or stack[C];
+        B = B > 255 and constants[B-256] or stack[B];
+        C = C > 255 and constants[C-256] or stack[C];
 
         stack[instruction.A][B] = C" },
             {10,@"stack[instruction.A] = {}" },
@@ -41,7 +41,7 @@ namespace Skid_Protect
         
 
         B = stack[B]
-        C = C > 255 and constants[C-256].data or stack[C]
+        C = C > 255 and constants[C-256] or stack[C]
 
         stack[A+1] = B
         stack[A]   = B[C]" },
@@ -49,48 +49,48 @@ namespace Skid_Protect
         C = instruction.C;
        
 
-        B = B > 255 and constants[B-256].data or stack[B];
-        C = C > 255 and constants[C-256].data or stack[C];
+        B = B > 255 and constants[B-256] or stack[B];
+        C = C > 255 and constants[C-256] or stack[C];
 
         stack[instruction.A] = B+C;" },
             {13,@"B = instruction.B;
         C = instruction.C;
        
 
-        B = B > 255 and constants[B-256].data or stack[B];
-        C = C > 255 and constants[C-256].data or stack[C];
+        B = B > 255 and constants[B-256] or stack[B];
+        C = C > 255 and constants[C-256] or stack[C];
 
         stack[instruction.A] = B - C;" },
             {14,@"B = instruction.B;
         C = instruction.C;
        
 
-        B = B > 255 and constants[B-256].data or stack[B];
-        C = C > 255 and constants[C-256].data or stack[C];
+        B = B > 255 and constants[B-256] or stack[B];
+        C = C > 255 and constants[C-256] or stack[C];
 
         stack[instruction.A] = B * C;" },
             {15,@"B = instruction.B;
         C = instruction.C;
        
 
-        B = B > 255 and constants[B-256].data or stack[B];
-        C = C > 255 and constants[C-256].data or stack[C];
+        B = B > 255 and constants[B-256] or stack[B];
+        C = C > 255 and constants[C-256] or stack[C];
 
         stack[instruction.A] = B / C;" },
             {16,@"B = instruction.B;
         C = instruction.C;
        
 
-        B = B > 255 and constants[B-256].data or stack[B];
-        C = C > 255 and constants[C-256].data or stack[C];
+        B = B > 255 and constants[B-256] or stack[B];
+        C = C > 255 and constants[C-256] or stack[C];
 
         stack[instruction.A] = B % C;" },
             {17,@"B = instruction.B;
         C = instruction.C;
        
 
-        B = B > 255 and constants[B-256].data or stack[B];
-        C = C > 255 and constants[C-256].data or stack[C];
+        B = B > 255 and constants[B-256] or stack[B];
+        C = C > 255 and constants[C-256] or stack[C];
 
         stack[instruction.A] = B ^ C;" },
             {18,@"stack[instruction.A] = -stack[instruction.B]" },
@@ -109,8 +109,8 @@ namespace Skid_Protect
         
 
         A = A ~= 0
-        if (B > 255) then B = constants[B-256].data else B = stack[B] end
-        if (C > 255) then C = constants[C-256].data else C = stack[C] end
+        if (B > 255) then B = constants[B-256] else B = stack[B] end
+        if (C > 255) then C = constants[C-256] else C = stack[C] end
         if (B == C) ~= A then
             IP = IP + 1
         end" },
@@ -120,8 +120,8 @@ namespace Skid_Protect
         
 
         A = A ~= 0
-        B = B > 255 and constants[B-256].data or stack[B]
-        C = C > 255 and constants[C-256].data or stack[C]
+        B = B > 255 and constants[B-256] or stack[B]
+        C = C > 255 and constants[C-256] or stack[C]
         if (B < C) ~= A then
             IP = IP + 1
         end" },
@@ -131,8 +131,8 @@ namespace Skid_Protect
         
 
         A = A ~= 0
-        B = B > 255 and constants[B-256].data or stack[B]
-        C = C > 255 and constants[C-256].data or stack[C]
+        B = B > 255 and constants[B-256] or stack[B]
+        C = C > 255 and constants[C-256] or stack[C]
         if (B <= C) ~= A then
             IP = IP + 1
         end" },
@@ -342,7 +342,7 @@ namespace Skid_Protect
 			stack[instruction.A] = stack[instruction.B];
 		end,"},
             {1,@"function(instruction)	-- LOADK
-			stack[instruction.A] = constants[instruction.Bx].data;
+			stack[instruction.A] = constants[instruction.Bx];
 		end,"},
             {2,@"function(instruction)	-- LOADBOOL
 			stack[instruction.A] = instruction.B ~= 0
@@ -360,17 +360,17 @@ namespace Skid_Protect
 			stack[instruction.A] = upvalues[instruction.B]
 		end,"},
             {5, @"function(instruction)	-- GETGLOBAL
-			local key = constants[instruction.Bx].data;
+			local key = constants[instruction.Bx];
 			stack[instruction.A] = environment[key];
 		end,"},
             {6,@"function(instruction)	-- GETTABLE
 			local C = instruction.C
 			local stack = stack
-			C = C > 255 and constants[C-256].data or stack[C]
+			C = C > 255 and constants[C-256] or stack[C]
 			stack[instruction.A] = stack[instruction.B][C];
 		end," },
             {7,@"function(instruction)	-- SETGLOBAL
-			local key = constants[instruction.Bx].data;
+			local key = constants[instruction.Bx];
 			environment[key] = stack[instruction.A];
 		end," },
             {8,@"function (instruction)	-- SETUPVAL
@@ -381,8 +381,8 @@ namespace Skid_Protect
 			local C = instruction.C;
 			local stack, constants = stack, constants;
 
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
+			B = B > 255 and constants[B-256] or stack[B];
+			C = C > 255 and constants[C-256] or stack[C];
 
 			stack[instruction.A][B] = C
 		end," },
@@ -396,7 +396,7 @@ namespace Skid_Protect
 			local stack = stack
 
 			B = stack[B]
-			C = C > 255 and constants[C-256].data or stack[C]
+			C = C > 255 and constants[C-256] or stack[C]
 
 			stack[A+1] = B
 			stack[A]   = B[C]
@@ -406,8 +406,8 @@ namespace Skid_Protect
 			local C = instruction.C;
 			local stack, constants = stack, constants;
 
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
+			B = B > 255 and constants[B-256] or stack[B];
+			C = C > 255 and constants[C-256] or stack[C];
 
 			stack[instruction.A] = B+C;
 		end," },
@@ -416,8 +416,8 @@ namespace Skid_Protect
 			local C = instruction.C;
 			local stack, constants = stack, constants;
 
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
+			B = B > 255 and constants[B-256] or stack[B];
+			C = C > 255 and constants[C-256] or stack[C];
 
 			stack[instruction.A] = B - C;
 		end," },
@@ -426,8 +426,8 @@ namespace Skid_Protect
 			local C = instruction.C;
 			local stack, constants = stack, constants;
 
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
+			B = B > 255 and constants[B-256] or stack[B];
+			C = C > 255 and constants[C-256] or stack[C];
 
 			stack[instruction.A] = B * C;
 		end," },
@@ -436,8 +436,8 @@ namespace Skid_Protect
 			local C = instruction.C;
 			local stack, constants = stack, constants;
 
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
+			B = B > 255 and constants[B-256] or stack[B];
+			C = C > 255 and constants[C-256] or stack[C];
 
 			stack[instruction.A] = B / C;
 		end," },
@@ -446,8 +446,8 @@ namespace Skid_Protect
 			local C = instruction.C;
 			local stack, constants = stack, constants;
 
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
+			B = B > 255 and constants[B-256] or stack[B];
+			C = C > 255 and constants[C-256] or stack[C];
 
 			stack[instruction.A] = B % C;
 		end," },
@@ -456,8 +456,8 @@ namespace Skid_Protect
 			local C = instruction.C;
 			local stack, constants = stack, constants;
 
-			B = B > 255 and constants[B-256].data or stack[B];
-			C = C > 255 and constants[C-256].data or stack[C];
+			B = B > 255 and constants[B-256] or stack[B];
+			C = C > 255 and constants[C-256] or stack[C];
 
 			stack[instruction.A] = B ^ C;
 		end," },
@@ -488,8 +488,8 @@ namespace Skid_Protect
 			local stack, constants = stack, constants
 
 			A = A ~= 0
-			if (B > 255) then B = constants[B-256].data else B = stack[B] end
-			if (C > 255) then C = constants[C-256].data else C = stack[C] end
+			if (B > 255) then B = constants[B-256] else B = stack[B] end
+			if (C > 255) then C = constants[C-256] else C = stack[C] end
 			if (B == C) ~= A then
 				IP = IP + 1
 			end
@@ -501,8 +501,8 @@ namespace Skid_Protect
 			local stack, constants = stack, constants
 
 			A = A ~= 0
-			B = B > 255 and constants[B-256].data or stack[B]
-			C = C > 255 and constants[C-256].data or stack[C]
+			B = B > 255 and constants[B-256] or stack[B]
+			C = C > 255 and constants[C-256] or stack[C]
 			if (B < C) ~= A then
 				IP = IP + 1
 			end
@@ -514,8 +514,8 @@ namespace Skid_Protect
 			local stack, constants = stack, constants
 
 			A = A ~= 0
-			B = B > 255 and constants[B-256].data or stack[B]
-			C = C > 255 and constants[C-256].data or stack[C]
+			B = B > 255 and constants[B-256] or stack[B]
+			C = C > 255 and constants[C-256] or stack[C]
 			if (B <= C) ~= A then
 				IP = IP + 1
 			end

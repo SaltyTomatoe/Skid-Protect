@@ -7,11 +7,14 @@ namespace Skid_Protect
     {
 		static string directory = Directory.GetCurrentDirectory();
 		static string OS = Environment.OSVersion.Platform == PlatformID.Unix ? "/usr/bin/" : "";
-		static byte[] Get_Bytecode(string file)
+		static (bool failed,string output,byte[]bytecode) Get_Bytecode(string file)
         {
             string code = File.ReadAllText(file);
 			string l = Path.Combine(directory, "luac.out");
 			string d = Path.Combine(directory, file);
+
+			byte[] to_return;
+
 			Console.WriteLine("Checking file...\n");
 
 			Process proc = new Process
@@ -34,18 +37,27 @@ namespace Skid_Protect
 			proc.BeginOutputReadLine();
 			proc.BeginErrorReadLine();
 			proc.WaitForExit();
-			Console.WriteLine(err);
-			byte[] to_return = File.ReadAllBytes(l);
+
+			if (!File.Exists(l)) {
+				return (true,"Syntax Error: " + err.Substring(15,err.Length-15), null);
+			} 
+
+			to_return = File.ReadAllBytes(l);
 			File.Delete(l);
 
-			return to_return;
+			return (false,null,to_return);
 		}
         static void Main(string[] args)
         {
 			var watch = System.Diagnostics.Stopwatch.StartNew();
 
-			byte[] bytecode = Get_Bytecode("Code.lua");
-			Console.WriteLine("\nSerializing Bytecode & Fixing LUA VM");
+			(bool failed,string output,byte[] bytecode) = Get_Bytecode("Code.lua");
+
+			if (failed) {
+				Console.WriteLine(output); return;
+			}
+
+				Console.WriteLine("\nSerializing Bytecode & Fixing LUA VM");
 
 			string lbi = File.ReadAllText(Path.Combine(directory, "LBI.lua"));
 			string Compiled_VM = Serializer.Serialize(bytecode,lbi);
@@ -62,8 +74,8 @@ namespace Skid_Protect
 			{
 				StartInfo =
 						   {
-							   FileName  = luajit,
-							   Arguments = "Lua/Minifier/luasrcdiet.lua --maximum --opt-entropy --opt-emptylines --opt-eols --opt-numbers --opt-whitespace --opt-locals --noopt-strings  -o \"" + minified_finish + "\" \"" + output_file + "\"",
+							   FileName  = "cmd.exe",
+							   Arguments = "/C luamin -f \"" + output_file + "\"",
 							   UseShellExecute = false,
 							   RedirectStandardError = true,
 							   RedirectStandardOutput = true
@@ -71,15 +83,23 @@ namespace Skid_Protect
 			};
 
 			string err = "";
-
-			proc.OutputDataReceived += (sender, args) => { err += args.Data;};
+			string outp = "";
+			proc.OutputDataReceived += (sender, args) => { outp += args.Data;};
 			proc.ErrorDataReceived += (sender, args) => { err += args.Data;};
 			proc.Start();
 			proc.BeginOutputReadLine();
 			proc.BeginErrorReadLine();
 			proc.WaitForExit();
 			//File.Delete(output_file);
-
+			if(err != "")
+			{
+				Console.WriteLine(err);
+				return;
+			}
+			else
+			{
+				File.WriteAllText(minified_finish, outp);
+			}
 			watch.Stop();
 			var elapsedMs = watch.ElapsedMilliseconds;
 			Console.WriteLine("Finished.\nElapsed Time: " + elapsedMs + "ms");
