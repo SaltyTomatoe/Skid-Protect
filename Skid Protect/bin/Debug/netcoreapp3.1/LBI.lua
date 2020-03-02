@@ -1,8 +1,10 @@
 --- Extract bits from an integer
 --@author: Stravant
 
-local BitWise = {}
-
+local floor = math.floor
+local concat = table.concat
+local char = string.char
+local sub = string.sub
 local BitShiftLeft = function(integer, count)
 	return integer * (2 ^ count);
 end
@@ -30,13 +32,30 @@ local function xor(integerA, integerB)
 	for n = 0, mb-1 do
 		arr[mb - n] = (GetBits(integerA, n, 1) ~= GetBits(integerB, n, 1)) and 1 or 0
 	end
-	return tonumber(table.concat(arr, ""), 2)
+	return tonumber(concat(arr, ""), 2)
+end
+local function ascii_base(s)
+	return s:lower() == s and ('a'):byte() or ('A'):byte()
+  end
+  
+  -- ROT13 is based on Caesar ciphering algorithm, using 13 as a key
+  local function caesar_cipher(str, key)
+	return (str:gsub('%a', function(s)
+	  local base = ascii_base(s)
+	  return string.char(((s:byte() - base + key) % 26) + base)
+	end))
+  end
+ 
+  -- str     : a string to be deciphered
+  -- returns : the deciphered string
+  local function rot13_decipher(str) 
+	return caesar_cipher(str, -13) 
+  end
+local function fix(int,int2)
+	return char(xor(int,int2))
 end
 
-local function fix(int,int2)
-	return string.char(xor(int,int2))
-end
---//Lmao so like, this is kidna worthless
+--//Lmao sss so like, this is kidna worthless
 local function get_bits(input, n, n2)
 	if n2 then
 		local total = 0
@@ -56,8 +75,7 @@ local function decode_bytecode(bytecode)
 	local index = 1
 	local big_endian = false
     local int_size;
-    local size_t;
-
+	local size_t;
 	-- Binary decoding helper functions
 	local get_int8, get_int32, get_int64, get_float64, get_string;
 	do
@@ -154,7 +172,7 @@ local function decode_bytecode(bytecode)
 				elseif type == 3 then
 					constant = get_float64();
 				elseif type == 4 then
-					constant = get_string():sub(1, -2);
+					constant = rot13_decipher(get_string():sub(1, -2));
 				end
 
 				constants[i-1] = constant;

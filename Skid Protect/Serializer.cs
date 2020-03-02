@@ -133,21 +133,21 @@ namespace Skid_Protect
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 
-		static StringBuilder get_string(bool has_len = false, int len = 0)
+		static string get_string(bool has_len = false, int len = 0)
 		{
 			if (has_len == false)
 			{
 				len = get_int32();//we're expecting this due to the fact that it should be like that
 			}
 			StringBuilder str = new StringBuilder(len + 4);
-			str.Append(toInt32(len));
-			if (len == 0) return str;
+			if (len == 0) return str.ToString();
 			for (int i = 0; i != len; i++)
 			{
-				str.Append("\\").Append(bytecode[index + i]);
+				str.Append((char)bytecode[index + i]);
 			}
 			index = index + len;
-			return str;
+
+			return toInt32(len) + EncryptionLib.Rot13(str.ToString().Substring(0,str.Length - 1)) + "\\0";
 		}
 
 		static private StringBuilder Serialize()
@@ -260,8 +260,7 @@ namespace Skid_Protect
 							}
 							break;
 						case 4:
-							StringBuilder unfiltered = get_string();
-							nBytecode.Append(unfiltered.ToString());
+							nBytecode.Append(get_string());
 							//if (unfiltered.Length - 2 < 0)
 							//{
 
@@ -322,7 +321,13 @@ namespace Skid_Protect
 			lbi = lbi.Replace("%%Bytecode%%", bytecode);
 			lbi = lbi.Replace("--%%OPCODE_FUNCTIONS_HERE%%--", opcodes);
 			lbi = lbi.Replace("--%%CLOSURE_FUNCTIONS_HERE%%--", opcodes_Closure);
-			lbi = lbi.Replace("--//Lmao so like, this is kidna worthless", "local lmao_so_this_kinda_worthless = " + StringLibrary.Huge_fucking_table_xored("Lmao so like, this is kidna worthless"));
+			lbi = lbi.Replace("--//Lmao so like, this is kidna worthless", "local lmao_so_this_kinda_worthless = " + EncryptionLib.Xored_Table("Lmao so like, this is kidna worthless"));
+			lbi = lbi.Replace("\"%%Instructions%%\"", EncryptionLib.Xored_Table("Instructions"));
+			lbi = lbi.Replace("\"%%Constants%%\"", EncryptionLib.Xored_Table("Constants"));
+			lbi = lbi.Replace("\"%%Protos%%\"", EncryptionLib.Xored_Table("Prototypes"));
+			lbi = lbi.Replace("\"%%Upvalues%%\"", EncryptionLib.Xored_Table("Upvalues"));
+			lbi = lbi.Replace("\"%%Opcode%%\"", EncryptionLib.Xored_Table("Opcode"));
+
 			return lbi;
 		}
 		static public string Serialize(byte[] a1, string a2)
