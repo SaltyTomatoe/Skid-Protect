@@ -48,8 +48,9 @@ local function ascii_base(s)
  
   -- str     : a string to be deciphered
   -- returns : the deciphered string
-  local function rot13_decipher(str) 
-	return caesar_cipher(str, -13) 
+  local function dec_constants(val) 
+	if(type(val)~="string")then return val end
+	return caesar_cipher(val, -13) 
   end
 local function fix(int,int2)
 	return char(xor(int,int2))
@@ -128,63 +129,48 @@ local function decode_bytecode(bytecode)
 			instructions = instructions;
 			constants    = constants;
 			prototypes   = prototypes;
-			--debug = debug;
 		};
-
-		local num;
 
 		chunk.upvalues  = get_int8();
 
-        -- TODO: realign lists to 1
-		-- Decode instructions
-		do
-			num = get_int32();
-			for i = 1, num do
-				local instruction = {
-					-- opcode = opcode number;
-					-- type   = [ABC, ABx, AsBx]
-					-- A, B, C, Bx, or sBx depending on type
-				};
-				instruction.opcode = (get_int8())
-				local type   = get_int8()
-				local data = get_int32();
-				instruction.A = get_bits(data,1,7);
-				if type == 1 then
-					instruction.B = get_bits(data,8,16);
-					instruction.C = get_bits(data,17,25);
-				elseif type == 2 then
-					instruction.Bx = get_bits(data,8,26);
-				elseif type == 3 then
-					instruction.sBx = get_bits(data,8,26) - 131071;
-				end
-				instructions[i] = instruction;
+		for i = 1, get_int32() do
+			local instruction = {
+				-- opcode = opcode number;
+				-- type   = [ABC, ABx, AsBx]
+				-- A, B, C, Bx, or sBx depending on type
+			};
+			instruction.opcode = (get_int8())
+			local type   = get_int8()
+			local data = get_int32();
+			instruction.A = get_bits(data,1,7);
+			if type == 1 then
+				instruction.B = get_bits(data,8,16);
+				instruction.C = get_bits(data,17,25);
+			elseif type == 2 then
+				instruction.Bx = get_bits(data,8,26);
+			elseif type == 3 then
+				instruction.sBx = get_bits(data,8,26) - 131071;
 			end
+			print(instruction.opcode,instruction.sBx)
+			instructions[i] = instruction;
 		end
-
-		-- Decode constants
-		do
-			num = get_int32();
-			for i = 1, num do
-				local constant
-				local type = get_int8();
-				if type == 1 then
-					constant = (get_int8() ~= 0);
-				elseif type == 3 then
-					constant = get_float64();
-				elseif type == 4 then
-					constant = rot13_decipher(get_string():sub(1, -2));
-				end
-
-				constants[i-1] = constant;
+		if true then return end
+		for i = 1, get_int32() do
+			local constant
+			local type = get_int8();
+			if type == 1 then
+				constant = (get_int8() ~= 0);
+			elseif type == 3 then
+				constant = get_float64();
+			elseif type == 4 then
+				constant = get_string():sub(1, -2);
 			end
+			constants[i-1] = constant;
 		end
 
 		-- Decode Prototypes
-		do
-			num = get_int32();
-			for i = 1, num do
-				prototypes[i-1] = decode_chunk(true);
-			end
+		for i = 1, get_int32() do
+			prototypes[i-1] = decode_chunk(true);
 		end
 
 		
@@ -199,208 +185,20 @@ local function handle_return(...)
 	local t = {...}
 	return c, t
 end
-
+local insts = concat({fix(285,372),fix(778,868),fix(190,205),fix(256,372),fix(557,607),fix(998,915),fix(595,560),fix(1008,900),fix(831,854),fix(196,171),fix(57,87),fix(276,359),})
+local consts = concat({fix(21,118),fix(371,284),fix(839,809),fix(440,459),fix(296,348),fix(339,306),fix(161,207),fix(764,648),fix(362,281),})
+local protos = concat({fix(216,168),fix(290,336),fix(631,536),fix(698,718),fix(524,611),fix(743,659),fix(507,386),fix(211,163),fix(958,987),fix(148,231),})
+local opco = concat({fix(17,126),fix(458,442),fix(43,72),fix(259,364),fix(201,173),fix(536,637),})
 local function create_wrapper(cache, upvalues)
-	local instructions = cache.instructions;
-	local constants    = cache.constants;
-	local prototypes   = cache.prototypes;
+	local instructions = cache[insts];
+	local constants    = cache[consts];
+	local prototypes   = cache[protos];
 
 	
 	local stack, top
 	local environment
 	local IP = 1;	-- instruction pointer
 	local vararg, vararg_size
-	local opcode_funcs = {
-	
-[23] = function(instruction)	-- LOADK
-			stack[instruction.A] = constants[instruction.Bx];
-		end,
-[71] = function(instruction)	-- GETGLOBAL
-			local key = constants[instruction.Bx];
-			stack[instruction.A] = environment[key];
-		end,
-[74] = function(instruction)	-- MOVE
-			stack[instruction.A] = stack[instruction.B];
-		end,
-[15] = function(instruction)	-- CALL
-			local A = instruction.A;
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack = stack;
-			local args, results;
-			local limit, loop
-
-			args = {};
-			if B ~= 1 then
-				if B ~= 0 then
-					limit = A+B-1;
-				else
-					limit = top
-				end
-
-				loop = 0
-				for i = A+1, limit do
-					loop = loop + 1
-					args[loop] = stack[i];
-				end
-
-				limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
-			else
-				limit, results = handle_return(stack[A]())
-			end
-
-			top = A - 1
-
-			if C ~= 1 then
-				if C ~= 0 then
-					limit = A+C-2;
-				else
-					limit = limit+A
-				end
-
-				loop = 0;
-				for i = A, limit do
-					loop = loop + 1;
-					stack[i] = results[loop];
-				end
-			end
-		end,
-[7] = function(instruction)	-- CONCAT
-			local B = instruction.B
-			local result = stack[B]
-			for i = B+1, instruction.C do
-				result = result .. stack[i]
-			end
-			stack[instruction.A] = result
-		end,
-[60] = function(instruction)	-- GETTABLE
-			local C = instruction.C
-			local stack = stack
-			C = C > 255 and constants[C-256] or stack[C]
-			stack[instruction.A] = stack[instruction.B][C];
-		end,
-[11] = function(instruction)	-- FORPREP
-			local A = instruction.A
-			local stack = stack
-
-			stack[A] = stack[A] - stack[A+2]
-			IP = IP + instruction.sBx
-		end,
-[65] = function(instruction)	-- CLOSURE
-			local proto = prototypes[instruction.Bx]
-			local instructions = instructions
-			local stack = stack
-
-			local indices = {}
-			local new_upvals = setmetatable({},
-				{
-					__index = function(t, k)
-						local upval = indices[k]
-						return upval.segment[upval.offset]
-					end,
-					__newindex = function(t, k, v)
-						local upval = indices[k]
-						upval.segment[upval.offset] = v
-					end
-				}
-			)
-			for i = 1, proto.upvalues do
-				local movement = instructions[IP]
-				if movement.opcode == 0 then -- MOVE
-					indices[i-1] = {segment = stack, offset = movement.B}
-				elseif instructions[IP].opcode == 4 then -- GETUPVAL
-					indices[i-1] = {segment = upvalues, offset = movement.B}
-				end
-				IP = IP + 1
-			end
-
-			local func = create_wrapper(proto, new_upvals)
-			stack[instruction.A] = func
-		end,
-[81] = function(instruction)	-- FORLOOP
-			local A = instruction.A
-			local stack = stack
-
-			local step = stack[A+2]
-			local index = stack[A] + step
-			stack[A] = index
-
-			if step > 0 then
-				if index <= stack[A+1] then
-					IP = IP + instruction.sBx
-					stack[A+3] = index
-				end
-			else
-				if index >= stack[A+1] then
-					IP = IP + instruction.sBx
-					stack[A+3] = index
-				end
-			end
-		end,
-[66] = function(instruction)	-- SUB
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack, constants = stack, constants;
-
-			B = B > 255 and constants[B-256] or stack[B];
-			C = C > 255 and constants[C-256] or stack[C];
-
-			stack[instruction.A] = B - C;
-		end,
-[29] = function (instruction)	-- NEWTABLE
-			stack[instruction.A] = {}
-		end,
-[99] = function (instruction)	-- SETTABLE
-			local B = instruction.B;
-			local C = instruction.C;
-			local stack, constants = stack, constants;
-
-			B = B > 255 and constants[B-256] or stack[B];
-			C = C > 255 and constants[C-256] or stack[C];
-
-			stack[instruction.A][B] = C
-		end,
-[49] = function(instruction) -- RETURN
-			--TODO: CLOSE
-			local A = instruction.A;
-			local B = instruction.B;
-			local stack = stack;
-			local limit;
-			local loop, output;
-
-			if B == 1 then
-				return true;
-			end
-			if B == 0 then
-				limit = top
-			else
-				limit = A + B - 2;
-			end
-
-			output = {};
-			local loop = 0
-			for i = A, limit do
-				loop = loop + 1
-				output[loop] = stack[i];
-			end
-			return true, output;
-		end,
-[54] = function(instruction)	-- LOADBOOL
-			stack[instruction.A] = instruction.B ~= 0
-			if instruction.C ~= 0 then
-				IP = IP + 1
-			end
-		end,
-[39] = function(instruction)	-- TEST
-			local A = stack[instruction.A];
-			if (not not A) == (instruction.C == 0) then
-				IP = IP + 1
-			end
-		end,
-[47] = function(instruction)	-- JUMP
-			IP = IP + instruction.sBx
-		end,
-	}
 	local function loop()
 		local instructions = instructions
 		local instruction, a, b
@@ -408,10 +206,80 @@ local function create_wrapper(cache, upvalues)
 		while true do
 			instruction = instructions[IP];
 			IP = IP + 1
-			a, b = opcode_funcs[instruction.opcode](instruction);
-			if a then
-				return b;
-			end
+			
+ if instruction[opco] == 5 then 
+stack[instruction.A] = environment[dec_constants(constants[instruction.Bx])];
+ elseif instruction[opco] == 1 then 
+stack[instruction.A] = dec_constants(constants[instruction.Bx])
+ elseif instruction[opco] == 28 then 
+A = instruction.A;
+        B = instruction.B;
+        C = instruction.C;
+       
+        local args, results;
+        local limit, loop
+
+        args = {};
+        if B ~= 1 then
+            if B ~= 0 then
+                limit = A+B-1;
+            else
+                limit = top
+            end
+
+            loop = 0
+            for i = A+1, limit do
+                loop = loop + 1
+                args[loop] = stack[i];
+            end
+
+            limit, results = handle_return(stack[A](unpack(args, 1, limit-A)))
+        else
+            limit, results = handle_return(stack[A]())
+        end
+
+        top = A - 1
+
+        if C ~= 1 then
+            if C ~= 0 then
+                limit = A+C-2;
+            else
+                limit = limit+A
+            end
+
+            loop = 0;
+            for i = A, limit do
+                loop = loop + 1;
+                stack[i] = results[loop];
+            end
+        end
+ elseif instruction[opco] == 30 then 
+--TODO: CLOSE
+        A = instruction.A;
+        B = instruction.B;
+       
+        local limit;
+        local loop, output;
+
+        if B == 1 then
+            return true;
+        end
+        if B == 0 then
+            limit = top
+        else
+            limit = A + B - 2;
+        end
+
+        output = {};
+        local loop = 0
+        for i = A, limit do
+            loop = loop + 1
+            output[loop] = stack[i];
+        end
+        return true, output;
+ elseif instruction[opco] == 22 then 
+IP = IP + instruction.sBx
+ end
 		end
 	end
 	local function func(...)
@@ -463,4 +331,4 @@ local function create_wrapper(cache, upvalues)
 	return func;
 end
 
-create_wrapper(decode_bytecode("\0\98\0\0\0\23\2\0\0\0\0\71\2\129\0\0\0\23\2\2\1\0\0\71\2\131\1\0\0\74\1\4\0\0\0\15\1\3\1\2\0\7\1\2\1\3\0\15\1\1\1\1\0\71\2\129\0\0\0\23\2\2\2\0\0\15\1\1\1\1\0\71\2\129\2\0\0\60\1\129\0\6\1\15\1\129\0\2\0\74\1\130\0\0\0\23\2\131\3\0\0\74\1\4\0\0\0\23\2\133\3\0\0\11\3\131\0\0\1\65\2\7\0\0\0\15\1\135\0\1\0\81\3\3\254\255\0\71\2\131\0\0\0\23\2\4\4\0\0\71\2\133\2\0\0\60\1\133\2\6\1\15\1\133\0\2\0\66\1\133\2\1\0\23\2\134\4\0\0\7\1\133\2\6\0\15\1\131\1\1\0\71\2\131\0\0\0\23\2\4\5\0\0\15\1\3\1\1\0\71\2\131\2\0\0\60\1\131\1\6\1\15\1\131\0\2\0\74\1\129\1\0\0\29\1\3\0\0\0\23\2\132\3\0\0\74\1\5\0\0\0\23\2\134\3\0\0\11\3\4\4\0\1\71\2\136\1\0\0\74\1\137\3\0\0\15\1\8\1\2\0\23\2\137\5\0\0\71\2\138\1\0\0\74\1\139\3\0\0\15\1\10\1\2\0\7\1\137\4\10\0\99\1\3\4\9\0\81\3\132\250\255\0\71\2\132\0\0\0\23\2\5\4\0\0\71\2\134\2\0\0\60\1\6\3\6\1\15\1\134\0\2\0\66\1\6\3\1\0\23\2\135\4\0\0\7\1\6\3\7\0\15\1\132\1\1\0\71\2\132\0\0\0\23\2\5\6\0\0\15\1\4\1\1\0\71\2\132\2\0\0\60\1\4\2\6\1\15\1\132\0\2\0\74\1\1\2\0\0\23\2\132\3\0\0\74\1\5\0\0\0\23\2\134\3\0\0\11\3\4\2\0\1\71\2\136\1\0\0\74\1\137\3\0\0\15\1\8\1\2\0\60\1\136\1\8\0\99\1\131\131\8\0\81\3\132\252\255\0\71\2\132\0\0\0\23\2\5\4\0\0\71\2\134\2\0\0\60\1\6\3\6\1\15\1\134\0\2\0\66\1\6\3\1\0\23\2\135\4\0\0\7\1\6\3\7\0\15\1\132\1\1\0\71\2\132\0\0\0\23\2\133\6\0\0\71\2\134\2\0\0\60\1\6\3\6\1\15\1\134\0\2\0\66\1\6\3\2\0\23\2\135\4\0\0\7\1\6\3\7\0\15\1\132\1\1\0\49\1\128\0\0\0\14\0\0\0\3\0\0\0\0\0\106\248\64\4\6\0\0\0cevag\0\4\13\0\0\0Vgrengvbaf: \0\4\9\0\0\0gbfgevat\0\4\17\0\0\0PYBFHER grfgvat.\0\4\3\0\0\0bf\0\4\6\0\0\0pybpx\0\3\0\0\0\0\0\0\240\63\4\6\0\0\0Gvzr:\0\4\2\0\0\0f\0\4\18\0\0\0FRGGNOYR grfgvat.\0\4\12\0\0\0RCVP TNZRE \0\4\18\0\0\0TRGGNOYR grfgvat.\0\4\12\0\0\0Gbgny Gvzr:\0\1\0\0\0\0\7\0\0\0\54\1\0\0\0\0\39\1\0\0\0\0\47\3\0\1\0\1\71\2\0\0\0\0\23\2\129\0\0\0\15\1\0\1\1\0\49\1\128\0\0\0\2\0\0\0\4\6\0\0\0cevag\0\4\11\0\0\0Url tnzre.\0\0\0\0\0"))()
+return create_wrapper(decode_bytecode("\0\4\0\0\0\5\2\0\0\0\0\1\2\129\0\0\0\22\3\197\255\255\0\30\1\128\0\0\0\22\3\197\0\0\1\28\1\0\1\1\0\22\3\69\254\255\0\2\0\0\0\4\6\0\0\0\99\101\118\97\103\0\4\2\0\0\0\46\0\0\0\0\0"))()

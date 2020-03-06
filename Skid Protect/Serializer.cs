@@ -32,13 +32,17 @@ namespace Skid_Protect
 			public int Bx { get; set; }
 			public int sBx { get; set; }
 			public int TimesUsed { get; set; }
+			public StringBuilder instrString { get; set; }
 		}
 		
 		static bool big_endian = false;
 		static int int_size = 4;
 		static int size_t = 4;
+		static bool opcodes_first = false;
 		static byte[] bytecode;
 		static int index = 0;
+		static int MOVE_OPCODE = 0;
+		static int GETUPVAL_OPCODE = 0;
 
 		static public StringBuilder opcode_funcs = new StringBuilder();
 		static private Dictionary<int, Opcode_Information> Opcodes_Used_in_Closure = new Dictionary<int, Opcode_Information>();
@@ -146,8 +150,14 @@ namespace Skid_Protect
 				str.Append((char)bytecode[index + i]);
 			}
 			index = index + len;
-
-			return toInt32(len) + EncryptionLib.Rot13(str.ToString().Substring(0,str.Length - 1)) + "\\0";
+			string str2 = EncryptionLib.Rot13(str.ToString().Substring(0, str.Length - 1));
+			StringBuilder r = new StringBuilder();
+			byte[] a = Encoding.ASCII.GetBytes(str2);
+			foreach(byte z in a)
+			{
+				r.Append("\\").Append(z);
+			}
+			return toInt32(len) + r.ToString() + "\\0";
 		}
 
 		static private StringBuilder Serialize()
@@ -167,26 +177,31 @@ namespace Skid_Protect
 				get_int8();//chunk varg
 				get_int8();//chunk stack
 
-				num = get_int32();
+				//Values
+				StringBuilder instructs = new StringBuilder();
+				List<Opcode_Information> InstructionList = new List<Opcode_Information>();
+				StringBuilder consts = new StringBuilder();
+				int instrs_Count = 0;
+				//end
 
 				nBytecode.Append("\\").Append(ups);
-				nBytecode.Append(toInt32(num));
 
+				num = get_int32();
+				//instructs.Append(toInt32(num));
 				for (int i = 0; i != num; i++)
 				{
 
 					var instruction = new Opcode_Information();
-				
+					StringBuilder newInstruction = new StringBuilder();
 					int data = get_int32();
 					int opcode = (data & 0x3F);
 					string opcode_type = lua_opcode_types[opcode];
-
-					
+					//Console.WriteLine(opcode);
 					int newName;
 					if (Opcodes_Used_in_Closure.ContainsKey(opcode) == false)
 					{
 						instruction.OldName = opcode;
-						newName = Available_Opcodes.First<int>();
+						newName = opcode;// Available_Opcodes.First<int>();
 						instruction.NewName = newName;
 						Available_Opcodes.Remove(newName);
 						Opcodes_Used_in_Closure.Add(opcode, instruction);
@@ -194,8 +209,14 @@ namespace Skid_Protect
 					else
 					{
 						newName = Opcodes_Used_in_Closure[opcode].NewName;
+						instruction.OldName = opcode;
 					}
-					nBytecode.Append("\\").Append(newName);
+
+					if (opcode == 0) { MOVE_OPCODE = newName; }
+
+					if (opcode == 4) { GETUPVAL_OPCODE = newName; }
+
+					newInstruction.Append("\\").Append(newName);
 					
 
 					instruction.A = (data >> 6) & 0xFF;
@@ -207,60 +228,163 @@ namespace Skid_Protect
 							instruction.B = (data >> 6 + 8 + 9) & 0x1FF; //Inst B
 							instruction.C = (data >> 6 + 8) & 0x1FF; // Inst C
 
-							nBytecode.Append("\\").Append(instruction.Type);
+							newInstruction.Append("\\").Append(instruction.Type);
 
 							bin.Append(Convert.ToString(instruction.C, 2).PadLeft(9, '0'));
 							bin.Append(Convert.ToString(instruction.B, 2).PadLeft(9, '0'));
 							bin.Append(Convert.ToString(instruction.A, 2).PadLeft(7, '0'));
-							nBytecode.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
+							newInstruction.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
 							break;
 						case "ABx":
 							instruction.Type = 2;
 							instruction.Bx = (data >> 6 + 8) & 0x3FFFF; //Inst Bx
-							nBytecode.Append("\\").Append(instruction.Type);
+							newInstruction.Append("\\").Append(instruction.Type);
 
 							bin.Append(Convert.ToString(instruction.Bx, 2).PadLeft(18, '0'));
 							bin.Append(Convert.ToString(instruction.A, 2).PadLeft(7, '0'));
-							nBytecode.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
+							newInstruction.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
 							break;
 						case "AsBx":
 							instruction.Type = 3;
 
 							instruction.sBx = ((data >> 6 + 8) & 0x3FFFF); //sBx
-							nBytecode.Append("\\").Append(instruction.Type);
+							newInstruction.Append("\\").Append(instruction.Type);
 							bin.Append(Convert.ToString(instruction.sBx, 2).PadLeft(18, '0'));
 							bin.Append(Convert.ToString(instruction.A, 2).PadLeft(7, '0'));
-							nBytecode.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
+							newInstruction.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
 							break;
 					}
+					instruction.instrString = newInstruction;
+					//Console.WriteLine(InstructionList.Count + 1);
+					InstructionList.Add(instruction);
 					//Console.WriteLine(nBytecode.ToString() + " " + opcode_type);
 				}
+				int idx = 0;
+				int amount = InstructionList.Count;
+				bool isFirst = true;
+				List<int> nums = GenerateRandom(amount - 1, 1, amount);// Available_Opcodes.First<int>()
+				Dictionary<int, StringBuilder> finishedFunctions = new Dictionary<int, StringBuilder>();
+				//print hi = getglobal print => loadk hi => call => return
+				foreach(var item in InstructionList)
+				{
+					
+					instrs_Count++;
+					if (ObfuscationSettings.CFObfuscation && true)//&& random.NextDouble() > 0.5)
+					{
+						if (isFirst != true)
+						{
+							int jmp_To = nums.First<int>();
+							nums.RemoveAt(0);
+							Console.WriteLine(jmp_To + " " + item.OldName + " " + idx);
+							//calculate 
+							if (finishedFunctions.ContainsKey(jmp_To))
+							{
+								finishedFunctions[jmp_To] = item.instrString.Append(finishedFunctions[jmp_To]);
+							}
+							else
+							{
+								finishedFunctions[jmp_To] = item.instrString;
+							}
+
+							var instruction = new Opcode_Information();
+							StringBuilder newInstruction = new StringBuilder();
+							int opcode = 22;
+							int newName;
+							if (Opcodes_Used_in_Closure.ContainsKey(opcode) == false)
+							{
+								instruction.OldName = opcode;
+								newName = opcode;// Available_Opcodes.First<int>();
+								instruction.NewName = newName;
+								Available_Opcodes.Remove(newName);
+								Opcodes_Used_in_Closure.Add(opcode, instruction);
+							}
+							else
+							{
+								newName = Opcodes_Used_in_Closure[opcode].NewName;
+								instruction.OldName = opcode;
+							}
+							newInstruction.Append("\\").Append(newName);
+
+
+							instruction.A = 69;
+							StringBuilder bin = new StringBuilder();
+							instruction.Type = 3;
+							if (jmp_To > idx)
+							{
+								instruction.sBx = (jmp_To - 1) + 131071; //sBx
+							}else if(jmp_To < idx)
+							{
+								instruction.sBx = 131071 - (jmp_To + 1); //sBx
+							}
+							else
+							{
+								instruction.sBx = 131071;
+							}
+							newInstruction.Append("\\").Append(instruction.Type);
+							bin.Append(Convert.ToString(instruction.sBx, 2).PadLeft(18, '0'));
+							bin.Append(Convert.ToString(instruction.A, 2).PadLeft(7, '0'));
+							newInstruction.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
+
+							if (finishedFunctions.ContainsKey(idx))
+							{
+								finishedFunctions[idx].Append(newInstruction);
+							}
+							else
+							{
+								finishedFunctions[idx] = newInstruction;
+							}
+						}
+						else 
+						{
+							isFirst = false;
+							finishedFunctions[0] = item.instrString;
+						}
+
+						//index
+						idx++;
+
+					}
+					else
+					{
+						instructs.Append(item.instrString);
+					}
+				}
+				if (ObfuscationSettings.CFObfuscation)
+				{
+					for(int i = 0; i != finishedFunctions.Count; i++)
+					{
+						var item = finishedFunctions[i];
+						instructs.Append(item);
+						Console.WriteLine(item + " : " + i);
+					}
+				}
+
 
 				//Console.WriteLine(nBytecode.ToString());
 
 				//Constants next!
 				num = get_int32();
-				nBytecode.Append(toInt32(num));
+				consts.Append(toInt32(num));
 				for (int i = 0; i != num; i++)
 				{
 					int type = get_int8(); //type of constant 
 
-					nBytecode.Append("\\").Append(type);
+					consts.Append("\\").Append(type);
 					switch (type)
 					{
 						case 1:
 							//bool data_bool = (get_int8() != 0);
-							nBytecode.Append("\\").Append(get_int8());
+							consts.Append("\\").Append(get_int8());
 							break;
 						case 3:
 							//get float
 							for (int x = 0; x != 8; x++)
 							{
-								nBytecode.Append("\\").Append(get_int8());
+								consts.Append("\\").Append(get_int8());
 							}
 							break;
 						case 4:
-							nBytecode.Append(get_string());
+							consts.Append(get_string());
 							//if (unfiltered.Length - 2 < 0)
 							//{
 
@@ -269,6 +393,20 @@ namespace Skid_Protect
 							break;
 					}
 				}
+
+				//randomize stuff 
+				opcodes_first = true;//random.NextDouble() > 0.5;
+				if (opcodes_first)
+				{
+					nBytecode.Append(toInt32(instrs_Count) + instructs.ToString());
+					nBytecode.Append(consts.ToString());
+				}
+				else
+				{
+					nBytecode.Append(consts.ToString());
+					nBytecode.Append(instructs.ToString());
+				}
+				
 
 				//prototypes
 				num = get_int32();
@@ -322,12 +460,32 @@ namespace Skid_Protect
 			lbi = lbi.Replace("--%%OPCODE_FUNCTIONS_HERE%%--", opcodes);
 			lbi = lbi.Replace("--%%CLOSURE_FUNCTIONS_HERE%%--", opcodes_Closure);
 			lbi = lbi.Replace("--//Lmao so like, this is kidna worthless", "local lmao_so_this_kinda_worthless = " + EncryptionLib.Xored_Table("Lmao so like, this is kidna worthless"));
-			lbi = lbi.Replace("\"%%Instructions%%\"", EncryptionLib.Xored_Table("Instructions"));
-			lbi = lbi.Replace("\"%%Constants%%\"", EncryptionLib.Xored_Table("Constants"));
-			lbi = lbi.Replace("\"%%Protos%%\"", EncryptionLib.Xored_Table("Prototypes"));
-			lbi = lbi.Replace("\"%%Upvalues%%\"", EncryptionLib.Xored_Table("Upvalues"));
-			lbi = lbi.Replace("\"%%Opcode%%\"", EncryptionLib.Xored_Table("Opcode"));
+			lbi = lbi.Replace("\"instructions\"", EncryptionLib.Xored_Table("instructions"));
+			lbi = lbi.Replace("\"constants\"", EncryptionLib.Xored_Table("constants"));
+			lbi = lbi.Replace("\"prototypes\"", EncryptionLib.Xored_Table("prototypes"));
+			lbi = lbi.Replace("\"opcode\"", EncryptionLib.Xored_Table("opcode"));
+			lbi = lbi.Replace("MOVE_OPCODE", MOVE_OPCODE.ToString());
+			lbi = lbi.Replace("GETUPVAL_OPCODE", GETUPVAL_OPCODE.ToString());
 
+			if (ObfuscationSettings.discardReturn)
+			{
+				lbi = lbi.Replace("--return ", "");
+			}
+			else
+			{
+				lbi = lbi.Replace("--return ", "return ");
+			}
+
+			if (opcodes_first)
+			{
+				lbi = lbi.Replace("--VM STRING ONE", VM_Strings.INSTRUCTIONS);
+				lbi = lbi.Replace("--VM STRING TWO", VM_Strings.CONSTANTS);
+			}
+			else
+			{
+				lbi = lbi.Replace("--VM STRING ONE", VM_Strings.CONSTANTS);
+				lbi = lbi.Replace("--VM STRING TWO", VM_Strings.INSTRUCTIONS);
+			}
 			return lbi;
 		}
 		static public string Serialize(byte[] a1, string a2)
@@ -335,10 +493,23 @@ namespace Skid_Protect
 			bytecode = a1;
 			StringBuilder bytes = Serialize();
 			StringBuilder opcodes_Closure = new StringBuilder();
+			int f1 = 0;
 			//format the used ops in closure
 			foreach (var item in Opcodes_Used_in_Closure.Values)
 			{
-				opcodes_Closure.Append("\n[" + item.NewName + "] = ").Append(Opcodes.ops_table[item.OldName]);
+				if (f1 == 0)
+				{
+					opcodes_Closure.Append("\n if instruction[opco] == " + item.NewName + " then \n").Append(Opcodes.ops[item.OldName]);
+				}
+				else
+				{
+					opcodes_Closure.Append("\n elseif instruction[opco] == " + item.NewName + " then \n").Append(Opcodes.ops[item.OldName]);
+				}
+				f1++;
+				if (f1 == Opcodes_Used_in_Closure.Count)
+				{
+					opcodes_Closure.Append("\n end");
+				}
 			}
 			//end
 			string lbi = format_lbi(a2, bytes.ToString(), opcode_funcs.ToString(),opcodes_Closure.ToString());

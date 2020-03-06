@@ -48,8 +48,9 @@ local function ascii_base(s)
  
   -- str     : a string to be deciphered
   -- returns : the deciphered string
-  local function rot13_decipher(str) 
-	return caesar_cipher(str, -13) 
+  local function dec_constants(val) 
+	if(type(val)~="string")then return val end
+	return caesar_cipher(val, -13) 
   end
 local function fix(int,int2)
 	return char(xor(int,int2))
@@ -128,63 +129,16 @@ local function decode_bytecode(bytecode)
 			instructions = instructions;
 			constants    = constants;
 			prototypes   = prototypes;
-			--debug = debug;
 		};
-
-		local num;
 
 		chunk.upvalues  = get_int8();
 
-        -- TODO: realign lists to 1
-		-- Decode instructions
-		do
-			num = get_int32();
-			for i = 1, num do
-				local instruction = {
-					-- opcode = opcode number;
-					-- type   = [ABC, ABx, AsBx]
-					-- A, B, C, Bx, or sBx depending on type
-				};
-				instruction.opcode = (get_int8())
-				local type   = get_int8()
-				local data = get_int32();
-				instruction.A = get_bits(data,1,7);
-				if type == 1 then
-					instruction.B = get_bits(data,8,16);
-					instruction.C = get_bits(data,17,25);
-				elseif type == 2 then
-					instruction.Bx = get_bits(data,8,26);
-				elseif type == 3 then
-					instruction.sBx = get_bits(data,8,26) - 131071;
-				end
-				instructions[i] = instruction;
-			end
-		end
-
-		-- Decode constants
-		do
-			num = get_int32();
-			for i = 1, num do
-				local constant
-				local type = get_int8();
-				if type == 1 then
-					constant = (get_int8() ~= 0);
-				elseif type == 3 then
-					constant = get_float64();
-				elseif type == 4 then
-					constant = rot13_decipher(get_string():sub(1, -2));
-				end
-
-				constants[i-1] = constant;
-			end
-		end
+		--VM STRING ONE
+		--VM STRING TWO
 
 		-- Decode Prototypes
-		do
-			num = get_int32();
-			for i = 1, num do
-				prototypes[i-1] = decode_chunk(true);
-			end
+		for i = 1, get_int32() do
+			prototypes[i-1] = decode_chunk(true);
 		end
 
 		
@@ -199,20 +153,20 @@ local function handle_return(...)
 	local t = {...}
 	return c, t
 end
-
+local insts = "instructions"
+local consts = "constants"
+local protos = "prototypes"
+local opco = "opcode"
 local function create_wrapper(cache, upvalues)
-	local instructions = cache.instructions;
-	local constants    = cache.constants;
-	local prototypes   = cache.prototypes;
+	local instructions = cache[insts];
+	local constants    = cache[consts];
+	local prototypes   = cache[protos];
 
 	
 	local stack, top
 	local environment
 	local IP = 1;	-- instruction pointer
 	local vararg, vararg_size
-	local opcode_funcs = {
-	--%%CLOSURE_FUNCTIONS_HERE%%--
-	}
 	local function loop()
 		local instructions = instructions
 		local instruction, a, b
@@ -220,10 +174,7 @@ local function create_wrapper(cache, upvalues)
 		while true do
 			instruction = instructions[IP];
 			IP = IP + 1
-			a, b = opcode_funcs[instruction.opcode](instruction);
-			if a then
-				return b;
-			end
+			--%%CLOSURE_FUNCTIONS_HERE%%--
 		end
 	end
 	local function func(...)
@@ -275,4 +226,4 @@ local function create_wrapper(cache, upvalues)
 	return func;
 end
 
-create_wrapper(decode_bytecode("%%Bytecode%%"))()
+--return create_wrapper(decode_bytecode("%%Bytecode%%"))()
