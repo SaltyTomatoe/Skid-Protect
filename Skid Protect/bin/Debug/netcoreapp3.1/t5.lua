@@ -1,4 +1,8 @@
-local god = (function(n, a, l, F, e, o)
+--[[
+    Made by Megumu
+    <3
+]]
+    local n,a,l,F,e,o = table.concat, tonumber, 1, 16777216, string, table.insert
     local o = o
     local k = getfenv or function()
             return _ENV
@@ -343,6 +347,3 @@ local god = (function(n, a, l, F, e, o)
         end
     end
     return N({i(L(), {}, k())()}) or nil
-end)
-
-god(table.concat, tonumber, 1, 16777216, string, table.insert)

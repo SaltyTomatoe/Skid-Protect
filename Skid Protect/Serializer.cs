@@ -32,6 +32,7 @@ namespace Skid_Protect
 			public int Bx { get; set; }
 			public int sBx { get; set; }
 			public int TimesUsed { get; set; }
+			public int indexIn { get; set; }
 			public StringBuilder instrString { get; set; }
 		}
 		
@@ -201,7 +202,7 @@ namespace Skid_Protect
 					if (Opcodes_Used_in_Closure.ContainsKey(opcode) == false)
 					{
 						instruction.OldName = opcode;
-						newName = opcode;// Available_Opcodes.First<int>();
+						newName = Available_Opcodes.First<int>();
 						instruction.NewName = newName;
 						Available_Opcodes.Remove(newName);
 						Opcodes_Used_in_Closure.Add(opcode, instruction);
@@ -217,8 +218,8 @@ namespace Skid_Protect
 					if (opcode == 4) { GETUPVAL_OPCODE = newName; }
 
 					newInstruction.Append("\\").Append(newName);
-					
 
+					instruction.indexIn = i;
 					instruction.A = (data >> 6) & 0xFF;
 					StringBuilder bin = new StringBuilder();
 					switch (opcode_type)
@@ -259,103 +260,80 @@ namespace Skid_Protect
 					InstructionList.Add(instruction);
 					//Console.WriteLine(nBytecode.ToString() + " " + opcode_type);
 				}
-				int idx = 0;
 				int amount = InstructionList.Count;
 				bool isFirst = true;
-				List<int> nums = GenerateRandom(amount - 1, 1, amount);// Available_Opcodes.First<int>()
-				Dictionary<int, StringBuilder> finishedFunctions = new Dictionary<int, StringBuilder>();
-				//print hi = getglobal print => loadk hi => call => return
-				foreach(var item in InstructionList)
+				int d = 0;
+				List<int> nums = GenerateRandom(amount, 0, amount);// Available_Opcodes.First<int>()
+				Dictionary<int, StringBuilder> rePositionedFunctions = new Dictionary<int, StringBuilder>();
+				List<StringBuilder> JMPCalls = new List<StringBuilder>();
+
+				//"print hi" == (getglobal print => loadk hi => call => return nil)
+				foreach (var item in InstructionList)
 				{
-					
 					instrs_Count++;
-					if (ObfuscationSettings.CFObfuscation && true)//&& random.NextDouble() > 0.5)
+					d++;
+					if (ObfuscationSettings.CFObfuscation && false)//&& random.NextDouble() > 0.5)
 					{
-						if (isFirst != true)
+						int jmp_To = nums.First<int>(); //where we insert the instruction
+						nums.RemoveAt(0);//don't allow duplicates
+
+						Console.WriteLine(item.OldName + " | " + jmp_To);
+						rePositionedFunctions[jmp_To] = item.instrString;
+
+						var instruction = new Opcode_Information();
+						StringBuilder newInstruction = new StringBuilder();
+						int opcode = 38;
+						//Console.WriteLine(opcode);
+						int newName;
+						if (Opcodes_Used_in_Closure.ContainsKey(opcode) == false)
 						{
-							int jmp_To = nums.First<int>();
-							nums.RemoveAt(0);
-							Console.WriteLine(jmp_To + " " + item.OldName + " " + idx);
-							//calculate 
-							if (finishedFunctions.ContainsKey(jmp_To))
-							{
-								finishedFunctions[jmp_To] = item.instrString.Append(finishedFunctions[jmp_To]);
-							}
-							else
-							{
-								finishedFunctions[jmp_To] = item.instrString;
-							}
-
-							var instruction = new Opcode_Information();
-							StringBuilder newInstruction = new StringBuilder();
-							int opcode = 22;
-							int newName;
-							if (Opcodes_Used_in_Closure.ContainsKey(opcode) == false)
-							{
-								instruction.OldName = opcode;
-								newName = opcode;// Available_Opcodes.First<int>();
-								instruction.NewName = newName;
-								Available_Opcodes.Remove(newName);
-								Opcodes_Used_in_Closure.Add(opcode, instruction);
-							}
-							else
-							{
-								newName = Opcodes_Used_in_Closure[opcode].NewName;
-								instruction.OldName = opcode;
-							}
-							newInstruction.Append("\\").Append(newName);
-
-
-							instruction.A = 69;
-							StringBuilder bin = new StringBuilder();
-							instruction.Type = 3;
-							if (jmp_To > idx)
-							{
-								instruction.sBx = (jmp_To - 1) + 131071; //sBx
-							}else if(jmp_To < idx)
-							{
-								instruction.sBx = 131071 - (jmp_To + 1); //sBx
-							}
-							else
-							{
-								instruction.sBx = 131071;
-							}
-							newInstruction.Append("\\").Append(instruction.Type);
-							bin.Append(Convert.ToString(instruction.sBx, 2).PadLeft(18, '0'));
-							bin.Append(Convert.ToString(instruction.A, 2).PadLeft(7, '0'));
-							newInstruction.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
-
-							if (finishedFunctions.ContainsKey(idx))
-							{
-								finishedFunctions[idx].Append(newInstruction);
-							}
-							else
-							{
-								finishedFunctions[idx] = newInstruction;
-							}
+							instruction.OldName = opcode;
+							newName = opcode;// Available_Opcodes.First<int>();
+							instruction.NewName = newName;
+							Available_Opcodes.Remove(newName);
+							Opcodes_Used_in_Closure.Add(opcode, instruction);
 						}
-						else 
+						else
 						{
-							isFirst = false;
-							finishedFunctions[0] = item.instrString;
+							newName = Opcodes_Used_in_Closure[opcode].NewName;
+							instruction.OldName = opcode;
 						}
+						newInstruction.Append("\\").Append(newName);
 
-						//index
-						idx++;
 
+						instruction.A = 0;
+						StringBuilder bin = new StringBuilder();
+						instruction.Type = 3;
+
+						//calculate jmp
+						
+						instruction.sBx = 131071 + jmp_To;
+						newInstruction.Append("\\").Append(instruction.Type);
+						bin.Append(Convert.ToString(instruction.sBx, 2).PadLeft(18, '0'));
+						bin.Append(Convert.ToString(instruction.A, 2).PadLeft(7, '0'));
+						newInstruction.Append(toInt32(Convert.ToInt32(bin.ToString(), 2)));
+						instruction.instrString = newInstruction;
+						//Console.WriteLine(InstructionList.Count + 1);
+						JMPCalls.Add(newInstruction);
+
+						d++;
+						instrs_Count++;
 					}
 					else
 					{
 						instructs.Append(item.instrString);
 					}
+					isFirst = false;
 				}
 				if (ObfuscationSettings.CFObfuscation)
 				{
-					for(int i = 0; i != finishedFunctions.Count; i++)
+					int i = 0;
+					foreach(var jmp_call in JMPCalls)
 					{
-						var item = finishedFunctions[i];
-						instructs.Append(item);
-						Console.WriteLine(item + " : " + i);
+						var func = rePositionedFunctions[i];
+						Console.WriteLine(jmp_call + " - " + func);
+						instructs.Append(jmp_call).Append(func);
+						i++;
 					}
 				}
 

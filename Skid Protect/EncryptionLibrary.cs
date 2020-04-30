@@ -61,6 +61,11 @@ namespace Skid_Protect
                         number += 13;
                     }
                 }
+                else
+                {
+                    Console.WriteLine("Outside of unicode: " + number + " " + (char)number);
+
+                }
                 array[i] = (char)number;
             }
             return new string(array);
@@ -99,30 +104,5 @@ namespace Skid_Protect
             return compressed;
         }
 
-        public static string ToBase36(ulong value)
-        {
-            const string base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            var sb = new StringBuilder(13);
-            do
-            {
-                sb.Insert(0, base36[(byte)(value % 36)]);
-                value /= 36;
-            } while (value != 0);
-            return sb.ToString();
-        }
-
-        public static string CompressedToString(List<int> compressed)
-        {
-            StringBuilder sb = new StringBuilder();
-            foreach (int i in compressed)
-            {
-                string n = ToBase36((ulong)i);
-
-                sb.Append(ToBase36((ulong)n.Length));
-                sb.Append(n);
-            }
-
-            return sb.ToString();
-        }
     }
 }

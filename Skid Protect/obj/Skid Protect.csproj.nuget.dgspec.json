@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\2022c\\Desktop\\Coding\\SkidProtect\\Skid Protect\\Skid Protect\\Skid Protect.csproj": {}
+    "C:\\Users\\2022c\\Documents\\FromDesktop\\Coding\\SkidProtect\\Skid Protect\\Skid Protect\\Skid Protect.csproj": {}
   },
   "projects": {
-    "C:\\Users\\2022c\\Desktop\\Coding\\SkidProtect\\Skid Protect\\Skid Protect\\Skid Protect.csproj": {
+    "C:\\Users\\2022c\\Documents\\FromDesktop\\Coding\\SkidProtect\\Skid Protect\\Skid Protect\\Skid Protect.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\2022c\\Desktop\\Coding\\SkidProtect\\Skid Protect\\Skid Protect\\Skid Protect.csproj",
+        "projectUniqueName": "C:\\Users\\2022c\\Documents\\FromDesktop\\Coding\\SkidProtect\\Skid Protect\\Skid Protect\\Skid Protect.csproj",
         "projectName": "Skid Protect",
-        "projectPath": "C:\\Users\\2022c\\Desktop\\Coding\\SkidProtect\\Skid Protect\\Skid Protect\\Skid Protect.csproj",
+        "projectPath": "C:\\Users\\2022c\\Documents\\FromDesktop\\Coding\\SkidProtect\\Skid Protect\\Skid Protect\\Skid Protect.csproj",
         "packagesPath": "C:\\Users\\2022c\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\2022c\\Desktop\\Coding\\SkidProtect\\Skid Protect\\Skid Protect\\obj\\",
+        "outputPath": "C:\\Users\\2022c\\Documents\\FromDesktop\\Coding\\SkidProtect\\Skid Protect\\Skid Protect\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\2022c\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -52,7 +52,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.101\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.200\\RuntimeIdentifierGraph.json"
         }
       }
     }

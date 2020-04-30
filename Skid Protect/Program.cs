@@ -15,7 +15,7 @@ namespace Skid_Protect
 
 			byte[] to_return;
 
-			Console.WriteLine("Checking file...\n");
+			//Console.WriteLine("Checking file...\n");
 
 			Process proc = new Process
 			{
@@ -57,19 +57,19 @@ namespace Skid_Protect
 				Console.WriteLine(output); return;
 			}
 
-				Console.WriteLine("\nSerializing Bytecode & Fixing LUA VM");
+			//Console.WriteLine("\nSerializing Bytecode & Fixing LUA VM");
 
 			string lbi = File.ReadAllText(Path.Combine(directory, "LBI.lua"));
 			string Compiled_VM = Serializer.Serialize(bytecode,lbi);
 
-			Console.WriteLine("\nFinished generating LUA VM");
+			//Console.WriteLine("\nFinished generating LUA VM");
 
 			string output_file = Path.Combine(directory, "t2.lua");
 			string minified_finish = Path.Combine(directory, "Output.lua");
 			string luajit = Path.Combine(directory, "Luajit/luajit.exe");
 			File.WriteAllText(output_file, Compiled_VM);
 
-			Console.WriteLine("\nMinifying");
+			//Console.WriteLine("\nMinifying");
 			Process proc = new Process
 			{
 				StartInfo =
@@ -102,9 +102,8 @@ namespace Skid_Protect
 			}
 			watch.Stop();
 			var elapsedMs = watch.ElapsedMilliseconds;
-			Console.WriteLine("Finished.\nElapsed Time: " + elapsedMs + "ms");
-			Console.ReadKey();
-            return;
+			Console.WriteLine("Elapsed Time: " + elapsedMs + "ms");
+            //return;
         }
     }
 }

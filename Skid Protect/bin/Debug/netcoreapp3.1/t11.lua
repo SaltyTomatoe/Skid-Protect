@@ -759,7 +759,5 @@ load_bytecode = function(bytecode)
 end;
 
 load_bytecode(string.dump(function()
-    if (not true) then
-        print'Hey gamer.';
-    end;
+    print'Hey gamer.';
 end))

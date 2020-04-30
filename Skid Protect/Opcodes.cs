@@ -334,7 +334,8 @@ namespace Skid_Protect
 
         for i = A, A + (B > 0 and B - 1 or vararg_size) do
             stack[i] = vararg[i - A]
-        end" }
+        end" },
+            {38,@"IP = instruction.sBx" } //Goto
         };
 
         

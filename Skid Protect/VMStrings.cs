@@ -24,10 +24,10 @@ namespace Skid_Protect
 			elseif type == 3 then
 				instruction.sBx = get_bits(data,8,26) - 131071;
 			end
-			print(instruction.opcode,instruction.sBx)
+			--print(instruction.opcode,instruction.sBx)
 			instructions[i] = instruction;
 		end
-		if true then return end";
+		--if true then return end";
 		public static string CONSTANTS = @"for i = 1, get_int32() do
 			local constant
 			local type = get_int8();
