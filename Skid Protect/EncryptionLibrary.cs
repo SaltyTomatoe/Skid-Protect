@@ -71,38 +71,7 @@ namespace Skid_Protect
             return new string(array);
         }
 
-        public static List<int> Compress(byte[] uncompressed)
-        {
-            // build the dictionary
-            Dictionary<string, int> dictionary = new Dictionary<string, int>();
-            for (int i = 0; i < 256; i++)
-                dictionary.Add(((char)i).ToString(), i);
-
-            string w = string.Empty;
-            List<int> compressed = new List<int>();
-
-            foreach (byte b in uncompressed)
-            {
-                string wc = w + (char)b;
-                if (dictionary.ContainsKey(wc))
-                    w = wc;
-
-                else
-                {
-                    // write w to output
-                    compressed.Add(dictionary[w]);
-                    // wc is a new sequence; add it to the dictionary
-                    dictionary.Add(wc, dictionary.Count);
-                    w = ((char)b).ToString();
-                }
-            }
-
-            // write remaining output if necessary
-            if (!string.IsNullOrEmpty(w))
-                compressed.Add(dictionary[w]);
-
-            return compressed;
-        }
+        
 
     }
 }
